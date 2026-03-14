@@ -1,6 +1,6 @@
-
 import './App.css'
-import { Button } from "@/components/ui/button"
+import MapView from "./components/mapas/MapView"
+import NegociosCards from "./components/cards/negociosCards"
 
 
 function App() {
@@ -8,10 +8,13 @@ function App() {
 
   return (
     <>
-      <div className="flex flex-wrap items-center gap-2 md:flex-row">
-        <Button >Button</Button>
-        <h1>hola!</h1>
-      </div>
+     <div className="relative h-screen">
+
+      <MapView />
+{/*       <NegociosCards /> */}
+    
+
+    </div>
     </>
   )
 }
