@@ -1,30 +1,119 @@
 import { Card } from "@/components/ui/card"
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem
+} from "@/components/ui/carousel"
 
-export default function NegociosCards() {
+
+import { Button } from "@/components/ui/button"
+import { Star } from "lucide-react"
+
+export default function NegociosCards({ bars }) {
   return (
-    <div className="absolute bottom-20 left-4 right-4 z-50">
-      <Card className="bg-black/80 p-4 flex gap-4">
+    <div className="absolute bottom-5 left-0 right-0 z-50 px-3 w-full z-50">
 
-        <img
-          src="/bar.jpg"
-          className="w-20 h-20 rounded-lg object-cover"
-        />
+      <Carousel
+        opts={{
+          align: "start",
+          dragFree: true
+        }}
+      >
+        <CarouselContent>
 
-        <div className="flex-1">
-          <h3 className="text-lg font-bold">
-            Cervecería Neón ⭐ 4.8
-          </h3>
+          {bars.map((bar) => (
+            <CarouselItem
+              key={bar.id}
+              className="basis-[85%]"
+            >
 
-          <p className="text-sm text-gray-400">
-            A 200m • Abierto hasta 03:00
-          </p>
+              <Card
+                className="
+                bg-[#0b0f14]/95
+                border-white/5
+                backdrop-blur
+                flex
+                gap-3
+                p-3
+                h-25"
+              >
 
-          <button className="mt-2 bg-cyan-500 px-4 py-2 rounded-lg">
-            Ver Detalles
-          </button>
-        </div>
+                {/* Imagen */}
+                <img
+                  src={bar.image}
+                  className="
+                  w-20
+                  h-20
+                  rounded-lg
+                  object-cover
+                  "
+                />
 
-      </Card>
+                {/* Info */}
+                <div className="flex flex-col flex-1 justify-between">
+
+                  <div>
+
+                    <div className="flex justify-between items-center">
+
+                      <h3 className="text-sm font-semibold">
+                        {bar.name}
+                      </h3>
+
+                      <div className="flex items-center gap-1 text-yellow-400 text-xs">
+                        <Star size={14} />
+                        {bar.rating}
+                      </div>
+
+                    </div>
+
+                    <p className="text-xs text-gray-400">
+                      {bar.distance} • {bar.open}
+                    </p>
+
+                  </div>
+
+                  {/* Tags */}
+                  <div className="flex gap-2 text-[10px]">
+
+                    <span className="px-2 py-1 rounded-md bg-cyan-500/20 text-cyan-400">
+                      {bar.tag1}
+                    </span>
+
+                    <span className="px-2 py-1 rounded-md bg-pink-500/20 text-pink-400">
+                      {bar.tag2}
+                    </span>
+
+                  </div>
+
+                </div>
+
+                {/* Botón */}
+                <div className="flex items-center">
+
+                  <Button
+                    size="sm"
+                    className="
+                    bg-cyan-500
+                    hover:bg-cyan-400
+                    text-black
+                    text-xs
+                    px-3
+                    "
+                  >
+                    Ver
+                  </Button>
+
+                </div>
+
+              </Card>
+
+            </CarouselItem>
+          ))}
+
+        </CarouselContent>
+      </Carousel>
+
     </div>
   )
 }

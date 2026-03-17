@@ -15,7 +15,7 @@ export default function MapControls({ userPosition }) {
   }
 
   return (
-    <div className="absolute right-4 bottom-40 flex flex-col gap-3 z-[1000]">
+    <div className="absolute right-4 bottom-80 flex flex-col gap-3 z-[1000]">
 
       <button
         onClick={zoomIn}
