@@ -3,38 +3,38 @@ import MapView from "./components/mapas/MapView"
 import NegociosCards from "./components/cards/negociosCards"
 import BottomNav from './components/navegation/bottomNavegation'
 import { Serch } from './components/serch/serch'
+import { useState } from 'react'
+import { useGetNegocios } from './hooks/getNegocios'
+import ubicacionUsuario from './hooks/obtenerUbicacionGps'
 
 
 function App() {
-  const bars = [
-    {
-      id: 1,
-      name: "Cervecería Neón",
-      rating: 4.8,
-      distance: "200m",
-      open: "Abierto hasta 03:00",
-      tag1: "CHILL VIBES",
-      tag2: "PROMO 2x1 GIN",
-      image: "/bar1.jpg"
-    },
-    {
-      id: 2,
-      name: "Bar Eclipse",
-      rating: 4.6,
-      distance: "350m",
-      open: "Abierto hasta 02:00",
-      tag1: "DJ SET",
-      tag2: "TRAGOS",
-      image: "/bar2.jpg"
+  const [bars, setBars] = useState([])
+  const { buscarNegociosCercanos } = useGetNegocios()
+  const positionUser = ubicacionUsuario()
+
+  const handleSearch = async (radiusKm) => {
+    if (!positionUser) {
+      alert("Esperando ubicación GPS...")
+      return
     }
-  ]
+
+    try {
+      const [lat, lng] = positionUser
+      console.log(`Buscando en radio de ${radiusKm}km desde`, lat, lng)
+      const data = await buscarNegociosCercanos(lat, lng, radiusKm)
+      setBars(data)
+    } catch (error) {
+      console.error("Error buscando negocios:", error)
+    }
+  }
 
   return (
     <>
-      <Serch />
+      <Serch onSearch={handleSearch} />
       <div style={{ position: "relative", height: "80vh",width:"100%", overflow: "hidden",marginTop:"1vh" }}>
-      <MapView />
-        <NegociosCards bars={bars} />
+      <MapView bars={bars} positionUser={positionUser} />
+    {/*     <NegociosCards bars={bars} /> */}
       </div>
   
       <BottomNav

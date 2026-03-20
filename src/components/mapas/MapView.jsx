@@ -1,47 +1,31 @@
 import { MapContainer, TileLayer } from "react-leaflet"
 import MapMarkers from "./MapMarkers"
 import MapControls from "./MapControls"
-import ubicacionUsuario from "../../hooks/obtenerUbicacionGps"
-import { Marker, Popup } from "react-leaflet"
-import useNegociosCercanos from "../../hooks/negociosCercanos"
+
+import L from "leaflet"
 
 
 
 
-export default function MapView() {
+export default function MapView({ bars, positionUser }) {
 
   const userIcon = new L.DivIcon({
     html: "&#128102",
     className: "text-2xl",
   })
-  const bars = [
-    {
-      id: 1,
-      name: "Cervecería Neón",
-      lat: -31.442347284324768,
-      lng: -64.1434824638745
-    },  
-    {
-      id: 2,
-      name: "Bar Centro",
-      lat:   -31.443039595841256,
-      lng:  -64.1483272142461
-    }
-  ]
+
 
 
   const barIcon = new L.DivIcon({
     html: "🍺",
     className: "text-2xl",
   })
-  const positionUSer = ubicacionUsuario()
 
-  const nearbyBars = useNegociosCercanos(positionUSer, bars, 500)
 
-  if (!positionUSer) return <div>Cargando GPS...</div>
+  if (!positionUser) return <div className="h-screen w-full flex items-center justify-center">Cargando GPS...</div>
   return (
     <MapContainer
-      center={positionUSer || [-31.42, -64.18]}
+      center={positionUser || [-31.42, -64.18]}
       zoom={14}
       zoomControl={false}
       className="h-screen w-full z-0"
@@ -52,23 +36,26 @@ export default function MapView() {
       />
 
       {/* Usuario */}
-      <MapMarkers position={positionUSer} text="Aqui estas" icon={userIcon} />
+      <MapMarkers position={positionUser} text="Aqui estas" icon={userIcon} />
+
+      {Array.isArray(bars) && bars.map(bar => {
+        const lat = Number(bar.lat)
+        const lng = Number(bar.lng)
+        if (isNaN(lat) || isNaN(lng)) return null
+        
+        return (
+          <MapMarkers
+            key={bar.id_negocio}
+            position={[lat, lng]}
+            icon={barIcon}
+            text={`${bar.razon_social} - Distancia: ${bar.distancia}mts`} 
+          />
+        )
+      })}
 
 
-      {nearbyBars.map(bar => (
-        <MapMarkers
-          key={bar.id}
-          position={[bar.lat, bar.lng]}
-          icon={barIcon}
-          text={`${bar.name} - ${Math.round(bar.distance)} m`} 
-        >
-      
-        </MapMarkers>
-      ))}
 
-
-
-      <MapControls userPosition={positionUSer} />
+      <MapControls userPosition={positionUser} />
       
     </MapContainer>
   )

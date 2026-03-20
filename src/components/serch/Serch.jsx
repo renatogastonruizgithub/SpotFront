@@ -7,9 +7,11 @@ import {
     InputGroupInput,
 } from "@/components/ui/input-group"
 
-import { AudioLinesIcon, PlusIcon } from "lucide-react"
+import { Search } from "lucide-react"
+import { useState } from "react"
 
-export function Serch() {
+export function Serch({ onSearch }) {
+    const [radius, setRadius] = useState(1) // Valor por defecto 15km
     return (
         <div className="
       fixed top-0 left-0 right-0
@@ -20,13 +22,20 @@ export function Serch() {
       ">
             <ButtonGroup>
                 <ButtonGroup>
-                    <Button variant="outline" size="icon">
-                        <PlusIcon />
+                    <Button variant="outline" size="icon" onClick={() => onSearch(radius)}>
+                        <Search />
                     </Button>
                 </ButtonGroup>
                 <ButtonGroup>
                     <InputGroup>
-                        <InputGroupInput placeholder="Send a message..." />
+                        <InputGroupInput 
+                        
+                            placeholder="Radio en Km..." 
+                            type="number"
+                            value={radius}
+                            className="text-white"
+                            onChange={(e) => setRadius(e.target.value)}
+                        />
 
                     </InputGroup>
                 </ButtonGroup>
