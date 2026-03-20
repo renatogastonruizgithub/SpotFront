@@ -1,8 +1,47 @@
 import './App.css'
-import MapaNegocios from "@/components/MapaNegocios"
+import MapView from "./components/mapas/MapView"
+import NegociosCards from "./components/cards/NegociosCards"
+import BottomNav from './components/navegation/bottomNavegation'
+import { Serch } from './components/serch/Serch'
+import { useState } from 'react'
+import { useGetNegocios } from './hooks/getNegocios'
+import useUbicacionUsuario from './hooks/obtenerUbicacionGps'
 
 function App() {
-  return <MapaNegocios />
+  const [bars, setBars] = useState([])
+  const { buscarNegociosCercanos } = useGetNegocios()
+  const positionUser = useUbicacionUsuario()
+
+  const handleSearch = async (radiusKm) => {
+    if (!positionUser) {
+      alert("Esperando ubicación GPS...")
+      return
+    }
+
+    try {
+      const [lat, lng] = positionUser
+      console.log(`Buscando en radio de ${radiusKm}km desde`, lat, lng)
+      const data = await buscarNegociosCercanos(lat, lng, radiusKm)
+      setBars(data)
+    } catch (error) {
+      console.error("Error buscando negocios:", error)
+    }
+  }
+
+  return (
+    <>
+      <Serch onSearch={handleSearch} />
+      <div style={{ position: "relative", height: "80vh", width: "100%", overflow: "hidden", marginTop: "1vh" }}>
+        <MapView bars={bars} positionUser={positionUser} />
+        {/* <NegociosCards bars={bars} /> */}
+      </div>
+
+      <BottomNav
+        active="map"
+        onChange={(tab) => console.log(tab)}
+      />
+    </>
+  )
 }
 
 export default App
