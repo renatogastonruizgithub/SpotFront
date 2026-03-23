@@ -31,16 +31,22 @@ function App() {
 
   return (
     <>
-      <Serch onSearch={handleSearch} />
-      <div style={{ position: "relative", height: "80vh",width:"100%", overflow: "hidden",marginTop:"1vh" }}>
-      <MapView bars={bars} positionUser={positionUser} />
-    {/*     <NegociosCards bars={bars} /> */}
+
+      <div className="h-[100dvh] w-full overflow-hidden relative">
+        <MapView bars={bars} positionUser={positionUser} />
+       
+        {/*     <NegociosCards bars={bars} /> */}
+        <div className="absolute top-4 left-0 right-0 z-50">
+         <Serch onSearch={handleSearch} />
+        </div>
+
+        <BottomNav
+          active="map"
+          onChange={(tab) => console.log(tab)}
+        />
       </div>
-  
-      <BottomNav
-        active="map"
-        onChange={(tab) => console.log(tab)}
-      />
+
+
     </>
   )
 }

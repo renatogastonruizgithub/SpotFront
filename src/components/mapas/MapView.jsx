@@ -1,7 +1,7 @@
 import { MapContainer, TileLayer } from "react-leaflet"
 import MapMarkers from "./MapMarkers"
 import MapControls from "./MapControls"
-
+import useDistanceTracker from "../../hooks/ejecutarNegociosCercanos"
 import L from "leaflet"
 
 
@@ -14,6 +14,9 @@ export default function MapView({ bars, positionUser }) {
     className: "text-2xl",
   })
 
+  useDistanceTracker((meters) => {
+    alert(`Caminaste ${Math.round(meters)} metros, revisa los negocios cercanos!`)
+  }, 100)
 
 
   const barIcon = new L.DivIcon({
@@ -28,11 +31,13 @@ export default function MapView({ bars, positionUser }) {
       center={positionUser || [-31.42, -64.18]}
       zoom={14}
       zoomControl={false}
-      className="h-screen w-full z-0"
+      className="h-full  w-full z-0"
     >
       <TileLayer
         attribution="Spot"
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+         opacity={1}
+         
       />
 
       {/* Usuario */}
