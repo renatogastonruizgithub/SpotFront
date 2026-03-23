@@ -1,6 +1,6 @@
 import './App.css'
 import MapView from "./components/mapas/MapView"
-import NegociosCards from "./components/cards/negociosCards"
+
 import BottomNav from './components/navegation/bottomNavegation'
 import { Serch } from './components/serch/serch'
 import { useState } from 'react'
@@ -35,7 +35,7 @@ function App() {
       <div className="h-[100dvh] w-full overflow-hidden relative">
         <MapView bars={bars} positionUser={positionUser} />
        
-        {/*     <NegociosCards bars={bars} /> */}
+      
         <div className="absolute top-4 left-0 right-0 z-50">
          <Serch onSearch={handleSearch} />
         </div>
