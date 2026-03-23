@@ -2,7 +2,7 @@ import './App.css'
 import MapView from "./components/mapas/MapView"
 
 import BottomNav from './components/navegation/bottomNavegation'
-import { Serch } from './components/serch/serch'
+import { Serch } from './components/serch/Serch'
 import { useState } from 'react'
 import { useGetNegocios } from './hooks/getNegocios'
 import ubicacionUsuario from './hooks/obtenerUbicacionGps'
