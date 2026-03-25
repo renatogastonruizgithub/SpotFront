@@ -30,11 +30,19 @@ export default function ubicacionUsuario() {
           pos.coords.longitude
         ])
       },
-      (err) => console.log(err),
+      (err) => {
+        const codes = { 1: "PERMISSION_DENIED", 2: "POSITION_UNAVAILABLE", 3: "TIMEOUT" }
+        console.warn(
+          "[GPS]",
+          codes[err.code] ?? err.code,
+          err.message,
+          "— Permití ubicación en el navegador o usá https/localhost."
+        )
+      },
       {
         enableHighAccuracy: true,
-        maximumAge: 0,
-        timeout: 5000
+        maximumAge: 30_000,
+        timeout: 15_000
       }
     )
 

@@ -40,7 +40,7 @@ export default function BottomNav({ active = "map", onChange }) {
               variant="ghost"
               onClick={() => onChange?.(item.id)}
               className={cn(
-                "flex flex-col gap-1 h-auto py-2 px-3 text-xs",
+                "flex flex-col gap-1 h-auto py-2  text-xs",
                 isActive
                   ? "text-cyan-400"
                   : "text-gray-400 hover:text-white"

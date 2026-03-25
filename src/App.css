@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 html, body, #root {
   height: 100%;
   margin: 0;
@@ -10,8 +11,17 @@ html, body, #root {
 
 .leaflet-container {
   font-family: inherit;
+=======
+/* html, body, #root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+>>>>>>> 1dda5deade535f168981b80d5ea79dc8405e7087
 }
-
+body {
+  overflow-x: hidden;
+} */
 .logo {
   height: 6em;
   padding: 1.5em;
