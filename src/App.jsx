@@ -1,6 +1,6 @@
 import './App.css'
 import MapView from "./components/mapas/MapView"
-
+import MapViewGL from "./components/mapas/MapViewGL"
 import BottomNav from './components/navegation/bottomNavegation'
 import { Serch } from './components/serch/Serch'
 import { useState } from 'react'
@@ -33,12 +33,13 @@ function App() {
     <>
 
       <div className="h-[100dvh] w-full overflow-hidden relative">
-        <MapView bars={bars} positionUser={positionUser} />
+       {/*  <MapView bars={bars} positionUser={positionUser} /> */}
        
-      
-        <div className="absolute top-4 left-0 right-0 z-50">
+        <MapViewGL bars={bars} positionUser={positionUser} />
+        
+       <div className="absolute top-4 left-0 right-0 z-50">
          <Serch onSearch={handleSearch} />
-        </div>
+        </div> 
 
         <BottomNav
           active="map"
