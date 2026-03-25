@@ -39,8 +39,8 @@ export default function MapView({ bars, positionUser }) {
       <MapMarkers position={positionUser} text="Aqui estas" icon={userIcon} />
 
       {Array.isArray(bars) && bars.map(bar => {
-        const lat = Number(bar.lat)
-        const lng = Number(bar.lng)
+        const lat = Number(bar.lat ?? bar.Lat)
+        const lng = Number(bar.lng ?? bar.Lng)
         if (isNaN(lat) || isNaN(lng)) return null
         
         return (
