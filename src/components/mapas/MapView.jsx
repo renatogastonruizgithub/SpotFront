@@ -10,8 +10,12 @@ import L from "leaflet"
 export default function MapView({ bars, positionUser }) {
 
   const userIcon = new L.DivIcon({
-    html: "&#128102",
-    className: "text-2xl",
+    html: `
+      <div class="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center shadow-md text-xl">
+        🧭
+      </div>
+    `,
+    className: "",
   })
 
   useDistanceTracker((meters) => {
@@ -20,8 +24,15 @@ export default function MapView({ bars, positionUser }) {
 
 
   const barIcon = new L.DivIcon({
-    html: "🍺",
-    className: "text-2xl",
+    html: `
+      <div class="relative w-10 h-10 flex items-center justify-center">
+        <div class="absolute inset-0 rounded-full bg-cyan-500/25 border border-cyan-200/60 animate-pulse"></div>
+        <div class="relative w-10 h-10 rounded-full bg-cyan-500/75 flex items-center justify-center shadow-md animate-[pulse_2.2s_ease-in-out_infinite]">
+          <span class="text-lg">🍸</span>
+        </div>
+      </div>
+    `,
+    className: "",
   })
 
 

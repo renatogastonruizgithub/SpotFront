@@ -13,6 +13,12 @@ export default defineConfig({
         target: "http://localhost:53957",
         changeOrigin: true,
       },
+      // OSRM enrutamiento por calles (evita CORS en dev). Producción: VITE_OSRM_URL o proxy en el servidor.
+      "/osrm": {
+        target: "https://router.project-osrm.org",
+        changeOrigin: true,
+        rewrite: (p) => p.replace(/^\/osrm/, ""),
+      },
     },
   },
   resolve: {

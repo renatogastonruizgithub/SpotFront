@@ -40,16 +40,26 @@ export default function BottomNav({ active = "map", onChange }) {
               variant="ghost"
               onClick={() => onChange?.(item.id)}
               className={cn(
-                "flex flex-col gap-1 h-auto py-2  text-xs",
+                "group relative flex h-auto flex-col gap-1 rounded-xl px-1.5 py-2 text-xs",
+                "transition-[color,transform,box-shadow,background-color] duration-200 ease-out",
+                "focus-visible:ring-2 focus-visible:ring-cyan-500/40",
                 isActive
-                  ? "text-cyan-400"
-                  : "text-gray-400 hover:text-white"
+                  ? "text-cyan-400 hover:bg-cyan-500/10"
+                  : [
+                      "text-gray-400",
+                      "hover:bg-cyan-500/[0.07] hover:text-cyan-200",
+                      "hover:shadow-[inset_0_0_0_1px_rgba(34,211,238,0.12)]",
+                      "active:scale-[0.97]",
+                    ]
               )}
             >
               <Icon
                 size={22}
                 className={cn(
-                  isActive && "drop-shadow-[0_0_6px_#22d3ee]"
+                  "transition-[transform,filter,color] duration-200 ease-out",
+                  isActive && "drop-shadow-[0_0_6px_#22d3ee]",
+                  !isActive &&
+                    "group-hover:scale-110 group-hover:text-cyan-300 group-hover:drop-shadow-[0_0_8px_rgba(34,211,238,0.35)]"
                 )}
               />
 
