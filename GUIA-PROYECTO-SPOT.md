@@ -4,7 +4,7 @@ Documento pensado para entender **qué es Spot**, **cómo está armado**, **qué
 
 ---
 
-## 1. Idea del producto
+## 1. Idea del producto de spot 
 
 **Problema:** La gente que quiere salir de noche no tiene un solo lugar donde ver, para cada bar, ambiente, música, promos y qué pasa esa noche; la info está repartida en redes, Google Maps y boca a boca.
 
