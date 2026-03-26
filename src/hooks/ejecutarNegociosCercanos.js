@@ -41,7 +41,7 @@ export default function useDistanceTracker(onTrigger, threshold = 100) {
 
         lastPosition.current = [latitude, longitude]
 
-        // 🔥 cuando llega a 100m
+        // al acumular el umbral (p. ej. 100 m)
         if (accumulated.current >= threshold) {
           onTrigger(accumulated.current)
 

@@ -2,13 +2,16 @@ import { useRef, useState, useCallback, useEffect } from "react"
 import Map, { Marker, Source, Layer } from "react-map-gl/maplibre"
 import MapControls from "./MapControls"
 import BarBottomCard from "./BarBottomCard"
+import BarDetailsScreen from "./BarDetailsScreen"
 import { distanceMeters } from "@/lib/geo"
 import { cn } from "@/lib/utils"
 import { fetchOsrmRoute } from "@/lib/osrmRoute"
+import UserLocationMarker from "./UserLocationMarker"
 
 export default function MapViewGL({ bars, positionUser }) {
   const mapRef = useRef(null)
   const [selectedBar, setSelectedBar] = useState(null)
+  const [detailsOpen, setDetailsOpen] = useState(false)
   const [routeGeojson, setRouteGeojson] = useState(null)
 
   /** Al elegir un bar: pedir ruta por calles y mostrar solo la línea (sin mover la cámara). */
@@ -70,6 +73,7 @@ export default function MapViewGL({ bars, positionUser }) {
 
   const handleMapClick = useCallback(() => {
     setSelectedBar(null)
+    setDetailsOpen(false)
   }, [])
 
   if (!positionUser) {
@@ -106,7 +110,7 @@ export default function MapViewGL({ bars, positionUser }) {
               id="route-to-bar-line"
               type="line"
               paint={{
-                "line-color": "#22d3ee",
+                "line-color": "#00D1FF",
                 "line-width": 5,
                 "line-opacity": 0.92,
               }}
@@ -119,9 +123,7 @@ export default function MapViewGL({ bars, positionUser }) {
           latitude={positionUser[0]}
           anchor="center"
         >
-          <div className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center shadow-md text-xl pointer-events-none">
-            🧭
-          </div>
+          <UserLocationMarker />
         </Marker>
 
         {Array.isArray(bars) &&
@@ -135,7 +137,7 @@ export default function MapViewGL({ bars, positionUser }) {
               <Marker key={bar.id_negocio} longitude={lng} latitude={lat} anchor="center">
                 <button
                   type="button"
-                  className="map-marker-pin cursor-pointer border-0 bg-transparent p-0 outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 rounded-full"
+                  className="map-marker-pin cursor-pointer border-0 bg-transparent p-0 outline-none focus-visible:ring-2 focus-visible:ring-[#00D1FF] rounded-full"
                   onClick={(e) => {
                     e.stopPropagation()
                     setSelectedBar(bar)
@@ -149,9 +151,17 @@ export default function MapViewGL({ bars, positionUser }) {
                         : "relative w-10 h-10 flex items-center justify-center transition-transform"
                     }
                   >
-                    <div className="absolute inset-0 rounded-full bg-cyan-500/20 border border-cyan-200/50" />
-                    <div className="relative w-9 h-9 rounded-full bg-cyan-500/80 flex items-center justify-center shadow-md">
-                      <span className="text-base leading-none">🍸</span>
+                    <div className="absolute inset-0 rounded-full border border-[#00D1FF]/40 bg-[#00D1FF]/20 shadow-[0_0_14px_rgba(0,209,255,0.35)]" />
+                    <div
+                      className={
+                        isSelected
+                          ? "relative flex h-9 w-9 items-center justify-center rounded-full bg-[#00D1FF] text-white shadow-[0_2px_12px_rgba(0,209,255,0.45)] ring-2 ring-[#7eefff]/70"
+                          : "relative flex h-9 w-9 items-center justify-center rounded-full bg-[#00D1FF]/92 text-white shadow-[0_2px_10px_rgba(0,209,255,0.35)] ring-1 ring-white/25"
+                      }
+                    >
+                      <span className="text-base leading-none select-none drop-shadow-sm" title="Bar" aria-hidden>
+                        🍸
+                      </span>
                     </div>
                   </div>
                 </button>
@@ -166,7 +176,7 @@ export default function MapViewGL({ bars, positionUser }) {
       </Map>
       </div>
 
-      {selectedBar ? (
+      {selectedBar && !detailsOpen ? (
         <div
           className="pointer-events-none fixed inset-x-3 z-[998] bottom-[96px]"
           onClick={(e) => e.stopPropagation()}
@@ -177,13 +187,28 @@ export default function MapViewGL({ bars, positionUser }) {
               distanceMeters={distanceForBar(selectedBar)}
               onClose={() => setSelectedBar(null)}
               onVerDetalles={() => {
-                const d = selectedBar.direccion ?? ""
-                alert(`${selectedBar.razon_social ?? "Bar"}\n${d}`.trim())
+                setDetailsOpen(true)
               }}
               onNavigate={openDirectionsExternas}
             />
           </div>
         </div>
+      ) : null}
+
+      {selectedBar && detailsOpen ? (
+        <BarDetailsScreen
+          bar={selectedBar}
+          distanceMeters={distanceForBar(selectedBar)}
+          onClose={() => setDetailsOpen(false)}
+          onNavigate={() => {
+            openDirectionsExternas()
+            setDetailsOpen(false)
+          }}
+          onGoNow={() => {
+            openDirectionsExternas()
+            setDetailsOpen(false)
+          }}
+        />
       ) : null}
     </>
   )

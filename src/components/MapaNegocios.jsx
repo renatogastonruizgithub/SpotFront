@@ -13,20 +13,18 @@ import { Button } from "@/components/ui/button";
 
 const API_BASE = "http://localhost:53957/api";
 
-// Icono azul para ubicación del usuario
 const iconUsuario = L.divIcon({
   className: "custom-marker",
-  html: '<div style="background:#3b82f6;width:20px;height:20px;border-radius:50%;border:3px solid white;box-shadow:0 2px 5px rgba(0,0,0,0.3);"></div>',
+  html: '<div style="background:#00D1FF;width:20px;height:20px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,209,255,0.4);"></div>',
   iconSize: [20, 20],
   iconAnchor: [10, 10],
 });
 
-// Icono naranja para negocios
 const iconNegocio = L.divIcon({
   className: "custom-marker",
-  html: '<div style="background:#f97316;width:20px;height:20px;border-radius:50%;border:3px solid white;box-shadow:0 2px 5px rgba(0,0,0,0.3);"></div>',
-  iconSize: [20, 20],
-  iconAnchor: [10, 10],
+  html: '<div style="width:34px;height:34px;border-radius:50%;background:rgba(0,209,255,0.9);border:2px solid rgba(126,239,255,0.95);display:flex;align-items:center;justify-content:center;font-size:17px;line-height:1;color:#fff;box-shadow:0 2px 12px rgba(0,209,255,0.35);">🍸</div>',
+  iconSize: [34, 34],
+  iconAnchor: [17, 17],
 });
 
 // Componente interno para centrar el mapa cuando cambia la posición
@@ -141,7 +139,7 @@ export default function MapaNegocios() {
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
 
-            {/* Pin azul: ubicación del usuario */}
+            {/* Usuario */}
             {posicionUsuario && (
               <Marker position={posicionUsuario} icon={iconUsuario}>
                 <Popup>Tu ubicación actual</Popup>
@@ -154,15 +152,15 @@ export default function MapaNegocios() {
                 center={posicionUsuario}
                 radius={radioKm * 1000}
                 pathOptions={{
-                  color: "#3b82f6",
-                  fillColor: "#3b82f6",
-                  fillOpacity: 0.15,
+                  color: "#00D1FF",
+                  fillColor: "#00D1FF",
+                  fillOpacity: 0.12,
                   weight: 2,
                 }}
               />
             )}
 
-            {/* Pins naranjas: negocios */}
+            {/* Negocios */}
             {negocios.map((neg) => (
               <Marker
                 key={neg.id_negocio}

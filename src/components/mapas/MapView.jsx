@@ -11,11 +11,16 @@ export default function MapView({ bars, positionUser }) {
 
   const userIcon = new L.DivIcon({
     html: `
-      <div class="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center shadow-md text-xl">
-        🧭
+      <div class="spot-user-marker">
+        <div class="spot-user-marker__inner">
+          <div class="spot-user-marker__halo"></div>
+          <div class="spot-user-marker__dot"></div>
+        </div>
       </div>
     `,
     className: "",
+    iconSize: [22, 22],
+    iconAnchor: [11, 11],
   })
 
   useDistanceTracker((meters) => {
@@ -26,9 +31,9 @@ export default function MapView({ bars, positionUser }) {
   const barIcon = new L.DivIcon({
     html: `
       <div class="relative w-10 h-10 flex items-center justify-center">
-        <div class="absolute inset-0 rounded-full bg-cyan-500/25 border border-cyan-200/60 animate-pulse"></div>
-        <div class="relative w-10 h-10 rounded-full bg-cyan-500/75 flex items-center justify-center shadow-md animate-[pulse_2.2s_ease-in-out_infinite]">
-          <span class="text-lg">🍸</span>
+        <div class="absolute inset-0 rounded-full border border-[#7eefff]/50 bg-[#00D1FF]/25 animate-pulse shadow-[0_0_12px_rgba(0,209,255,0.35)]"></div>
+        <div class="relative w-10 h-10 rounded-full flex items-center justify-center shadow-md shadow-[#00D1FF]/30 animate-[pulse_2.2s_ease-in-out_infinite] bg-[#00D1FF]/88 ring-1 ring-white/20">
+          <span class="text-lg leading-none drop-shadow-sm">🍸</span>
         </div>
       </div>
     `,

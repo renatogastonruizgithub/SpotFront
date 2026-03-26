@@ -66,5 +66,133 @@ body {
 
 /* Tarjeta de bar abierta: subir controles MapLibre por encima de la card */
 .spot-map-with-bar-card .maplibregl-ctrl-bottom-right {
-  bottom: 304px !important;
+  bottom: 260px !important;
+}
+
+/* Posición del usuario en el mapa (estilo apps tipo Uber) */
+@keyframes spot-user-halo {
+  0% {
+    transform: scale(0.88);
+    opacity: 0.5;
+  }
+  70% {
+    transform: scale(1.45);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.45);
+    opacity: 0;
+  }
+}
+
+.spot-user-marker {
+  pointer-events: none;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.spot-user-marker__inner {
+  position: relative;
+  width: 14px;
+  height: 14px;
+}
+
+.spot-user-marker__halo {
+  position: absolute;
+  inset: -6px;
+  border-radius: 9999px;
+  background: rgba(0, 209, 255, 0.22);
+  animation: spot-user-halo 2.4s ease-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spot-user-marker__halo {
+    animation: none;
+    opacity: 0.35;
+    transform: scale(1.1);
+  }
+}
+
+.spot-user-marker__dot {
+  position: relative;
+  width: 14px;
+  height: 14px;
+  border-radius: 9999px;
+  background: #00d1ff;
+  border: 3px solid #fff;
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.35),
+    0 0 0 1px rgba(0, 0, 0, 0.12);
+}
+
+/* Bottom sheet: animación de subida suave */
+@keyframes spot-sheet-in {
+  from {
+    transform: translateY(18px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes spot-open-emoji-pulse {
+  0% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+  40% {
+    transform: scale(1.14);
+    filter: brightness(1.35);
+  }
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+}
+
+/* Scroll del panel de detalles (que se vea oscuro/negro) */
+.spot-details-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.55) rgba(0, 0, 0, 0.15);
+}
+
+.spot-details-scroll::-webkit-scrollbar {
+  width: 7px;
+}
+
+.spot-details-scroll::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 9999px;
+}
+
+.spot-details-scroll::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.55);
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Horizontal stories scroll (tambien con thumb oscuro) */
+.spot-stories-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.55) rgba(0, 0, 0, 0.15);
+}
+
+.spot-stories-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+
+.spot-stories-scroll::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 9999px;
+}
+
+.spot-stories-scroll::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.55);
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }

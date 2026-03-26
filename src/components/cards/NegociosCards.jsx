@@ -29,7 +29,7 @@ export default function NegociosCards({ bars }) {
 
               <Card
                 className="
-                bg-[#0b0f14]/95
+                bg-[#111418]/95
                 border-white/5
                 backdrop-blur
                 flex
@@ -60,8 +60,8 @@ export default function NegociosCards({ bars }) {
                         {bar.name}
                       </h3>
 
-                      <div className="flex items-center gap-1 text-yellow-400 text-xs">
-                        <Star size={14} />
+                      <div className="flex items-center gap-1 text-[#FFC107] text-xs">
+                        <Star size={14} className="fill-[#FFC107] stroke-[#FFC107]" />
                         {bar.rating}
                       </div>
 
@@ -76,11 +76,11 @@ export default function NegociosCards({ bars }) {
                   {/* Tags */}
                   <div className="flex gap-2 text-[10px]">
 
-                    <span className="px-2 py-1 rounded-md bg-cyan-500/20 text-cyan-400">
+                    <span className="px-2 py-1 rounded-md border border-[#00D1FF]/40 bg-[#00D1FF]/15 text-[#7eefff]">
                       {bar.tag1}
                     </span>
 
-                    <span className="px-2 py-1 rounded-md bg-pink-500/20 text-pink-400">
+                    <span className="px-2 py-1 rounded-md border border-[#00D1FF]/35 bg-[#00D1FF]/10 text-[#9fefe8]">
                       {bar.tag2}
                     </span>
 
@@ -94,11 +94,12 @@ export default function NegociosCards({ bars }) {
                   <Button
                     size="sm"
                     className="
-                    bg-cyan-500
-                    hover:bg-cyan-400
-                    text-black
+                    bg-[#00D1FF]
+                    hover:bg-[#33d9ff]
+                    text-[#111418]
                     text-xs
                     px-3
+                    font-semibold
                     "
                   >
                     Ver
