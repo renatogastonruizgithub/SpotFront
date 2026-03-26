@@ -1,10 +1,13 @@
 import { useMap } from "react-map-gl/maplibre"
-import { Plus, Minus, Crosshair } from "lucide-react"
+import { Crosshair } from "lucide-react"
 import { NavigationControl } from "react-map-gl/maplibre"
+import { cn } from "@/lib/utils"
 
-export default function MapControls({ userPosition }) {
+export default function MapControls({ userPosition, detailCardOpen = false }) {
 
   const map = useMap()
+  // Cuando hay card del bar abierta, ocultamos COMPLETAMENTE los controles/compass.
+  if (detailCardOpen) return null
   /* 
     const zoomIn = () => map.zoomIn()
   
@@ -23,12 +26,16 @@ export default function MapControls({ userPosition }) {
   }
 
   return (
-    <div className="absolute right-2 bottom-100 flex flex-col gap-3 z-[1000]">
-
-      <NavigationControl style={{position:"absolute",right:"2px" ,top:"10dvh"}} showCompass={true} />
+    <div
+      className={cn(
+        "absolute right-2 z-[1000] flex flex-col gap-3 transition-[bottom] duration-200 ease-out",
+        "bottom-[96px]"
+      )}
+    >
+      <NavigationControl position="bottom-right" showCompass={true} />
       <button
         onClick={centerUser}
-        className="bg-cyan-500 p-2 rounded-xl text-white"
+        className="rounded-xl bg-[#00D1FF] p-2 text-white shadow-md shadow-[#00D1FF]/25 transition-colors hover:bg-[#33d9ff]"
       >
         <Crosshair size={20} />
       </button>
