@@ -149,7 +149,7 @@ Ruta típica: `spotBackend/WebApplication1/`
 ### `usuariosController`
 
 - **`GET api/usuarios`** / **`GET api/usuarios/{id}`** — Listar y ver usuario.
-- **`POST api/usuarios`** — Registro con validaciones; el **rol** viene de un enum (`admin`, `cliente`, `propietario`); la contraseña se guarda **hasheada** (método tipo `HashPassword` en el controlador).
+- **`POST api/usuarios`** — Registro con validaciones; el **rol** viene de un enum (`cliente`, `propietario`); la contraseña se guarda **hasheada** (método tipo `HashPassword` en el controlador).
 - **`PUT`**, **`DELETE`**, **`PATCH`**, cambio de contraseña, etc. — Mantenimiento de cuentas.
 
 ### DTOs
@@ -205,7 +205,7 @@ Tras cambiar `.env`, hay que **reiniciar** `npm run dev`.
 - Activar **`NegociosCards`** y unificar el formato de datos con el del mapa.
 - Endpoints y pantallas para **promociones**, **horarios**, **eventos “esta noche”** (muchas veces ya hay tablas en el modelo EF).
 - **Autenticación JWT** en la API y login en el front.
-- Panel para **dueños** y **admins** (aprobar bares, etc.), si la lógica aún no está en la API que tengas hoy.
+- Panel para **dueños** (aprobar y gestionar bares), si la lógica aún no está en la API que tengas hoy.
 
 ---
 
