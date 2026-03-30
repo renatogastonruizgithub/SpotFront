@@ -1,0 +1,254 @@
+/* Neon Lounge Dashboard styles.
+   - Glassmorphism base
+   - Neón/acento con glow usando CSS variables (--accent-rgb)
+   - Animaciones suaves para entrada/hover */
+
+.neon-screen {
+  min-height: 100dvh;
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+  color: #e9fbff;
+  background:
+    radial-gradient(900px 500px at -80px -80px, rgba(0, 209, 255, 0.28), transparent 55%),
+    radial-gradient(700px 400px at 110% 10%, rgba(255, 79, 216, 0.20), transparent 45%),
+    radial-gradient(650px 450px at 30% 110%, rgba(139, 92, 246, 0.18), transparent 50%),
+    linear-gradient(180deg, #051c22 0%, #041428 52%, #070915 100%);
+}
+
+.neon-screen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0) 36%),
+    radial-gradient(600px 200px at 50% 0%, rgba(255, 255, 255, 0.06), transparent 60%);
+  opacity: 0.8;
+}
+
+.neon-content {
+  position: relative;
+  z-index: 1;
+  padding: 18px 18px 0;
+}
+
+/* Glass base */
+.neon-glass {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow:
+    0 18px 45px rgba(0, 0, 0, 0.30),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+/* Stats cards */
+.neon-stats-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1.5rem; /* ~2xl */
+  padding: 16px 14px 14px;
+  transition:
+    transform 220ms ease,
+    box-shadow 220ms ease,
+    background 220ms ease;
+  box-shadow:
+    0 0 0 1px rgba(var(--accent-rgb, 0, 209, 255), 0.22),
+    0 0 26px rgba(var(--accent-rgb, 0, 209, 255), 0.18);
+}
+
+.neon-stats-card::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      420px circle at 90% 0%,
+      rgba(var(--accent-rgb, 0, 209, 255), 0.35),
+      transparent 58%
+    );
+}
+
+.neon-stats-card:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 0 0 1px rgba(var(--accent-rgb, 0, 209, 255), 0.30),
+    0 0 36px rgba(var(--accent-rgb, 0, 209, 255), 0.26);
+}
+
+.neon-stats-icon {
+  color: rgba(var(--accent-rgb, 0, 209, 255), 0.95);
+  filter: drop-shadow(0 0 12px rgba(var(--accent-rgb, 0, 209, 255), 0.35));
+}
+
+.neon-stats-value {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.neon-delta {
+  color: rgba(var(--accent-rgb, 0, 209, 255), 0.95);
+  opacity: 0.95;
+}
+
+/* Weekly chart */
+.neon-chart-wrap {
+  border-radius: 1.5rem;
+  padding: 16px 14px 14px;
+  overflow: hidden;
+}
+
+.neon-bars {
+  height: 92px;
+  align-items: flex-end;
+  gap: 10px;
+  display: flex;
+}
+
+.neon-bar {
+  flex: 1 1 0;
+  border-radius: 0.6rem;
+  background: rgba(255, 255, 255, 0.10);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: filter 260ms ease, transform 260ms ease, background 260ms ease;
+}
+
+.neon-bar--active {
+  background: rgba(var(--accent-rgb, 0, 209, 255), 0.35);
+  border-color: rgba(var(--accent-rgb, 0, 209, 255), 0.45);
+  filter: drop-shadow(0 0 16px rgba(var(--accent-rgb, 0, 209, 255), 0.35));
+}
+
+.neon-chart-in {
+  animation: neon-chart-in 520ms ease both;
+}
+
+@keyframes neon-chart-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Action cards */
+.neon-action {
+  width: 100%;
+  border-radius: 1.25rem;
+  padding: 14px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.04);
+  transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
+  box-shadow:
+    0 0 0 1px rgba(var(--accent-rgb, 0, 209, 255), 0.16),
+    0 16px 30px rgba(0, 0, 0, 0.24);
+}
+
+.neon-action:hover {
+  transform: translateY(-2px);
+  border-color: rgba(var(--accent-rgb, 0, 209, 255), 0.38);
+  box-shadow:
+    0 0 0 1px rgba(var(--accent-rgb, 0, 209, 255), 0.26),
+    0 0 30px rgba(var(--accent-rgb, 0, 209, 255), 0.18),
+    0 20px 38px rgba(0, 0, 0, 0.30);
+}
+
+.neon-action-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  background: rgba(var(--accent-rgb, 0, 209, 255), 0.16);
+  border: 1px solid rgba(var(--accent-rgb, 0, 209, 255), 0.30);
+  box-shadow: 0 0 18px rgba(var(--accent-rgb, 0, 209, 255), 0.18);
+}
+
+.neon-action-title {
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.neon-action-subtitle {
+  color: rgba(233, 251, 255, 0.72);
+  font-size: 0.86rem;
+}
+
+/* Header */
+.neon-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+}
+
+.neon-circle-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  transition: transform 200ms ease, border-color 200ms ease;
+}
+
+.neon-circle-btn:hover {
+  transform: translateY(-1px);
+  border-color: rgba(0, 209, 255, 0.25);
+}
+
+/* Bottom nav */
+.neon-bottom-nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
+  background: rgba(17, 20, 24, 0.98);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
+}
+
+.neon-bottom-item {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 4px 8px;
+  border-radius: 14px;
+  background: transparent;
+  color: rgba(233, 251, 255, 0.62);
+  transition: transform 160ms ease, color 160ms ease, background-color 160ms ease;
+}
+
+.neon-bottom-item:hover {
+  color: rgba(126, 239, 255, 0.95);
+}
+
+.neon-bottom-item--active {
+  color: #00D1FF;
+  background: rgba(0, 209, 255, 0.09);
+  box-shadow: inset 0 0 0 1px rgba(0, 209, 255, 0.20);
+}
+
+.neon-nav-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  background: #00D1FF;
+  box-shadow: 0 0 10px rgba(0, 209, 255, 0.6);
+}
+

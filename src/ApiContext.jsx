@@ -7,36 +7,32 @@ export function ApiProvider({ children }) {
 
   const api = useMemo(() => {
     const request = async (endpoint, options = {}) => {
+      const { treat404AsEmpty = false, ...fetchOptions } = options;
       const url = `${baseURL}${endpoint}`;
-      
+
       const headers = {
         'Content-Type': 'application/json',
-        ...options.headers,
+        ...fetchOptions.headers,
       };
 
-      // Aquí puedes agregar lógica para el token de autenticación
-      // const token = localStorage.getItem('token');
-      // if (token) {
-      //   headers['Authorization'] = `Bearer ${token}`;
-      // }
-
       const config = {
-        ...options,
+        ...fetchOptions,
         headers,
       };
 
       try {
         const response = await fetch(url, config);
-        
+
         if (!response.ok) {
-          // Intenta obtener el mensaje de error del cuerpo de la respuesta
+          if (treat404AsEmpty && response.status === 404) {
+            return [];
+          }
           const errorData = await response.json().catch(() => ({}));
           throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
         }
 
-        // Retorna JSON si el contenido es JSON
-        const contentType = response.headers.get("content-type");
-        if (contentType && contentType.includes("application/json")) {
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
           return await response.json();
         }
         return null;

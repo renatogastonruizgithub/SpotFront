@@ -34,7 +34,10 @@ export function Serch({ onSearch }) {
                             type="number"
                             value={radius}
                             className="text-white"
-                            onChange={(e) => setRadius(e.target.value)}
+                            onChange={(e) => {
+                                const v = Number(e.target.value)
+                                setRadius(Number.isFinite(v) && v > 0 ? v : 1)
+                            }}
                         />
 
                     </InputGroup>
