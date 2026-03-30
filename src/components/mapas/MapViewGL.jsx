@@ -3,7 +3,7 @@ import Map, { Marker, Source, Layer } from "react-map-gl/maplibre"
 import MapControls from "./MapControls"
 import BarBottomCard from "./BarBottomCard"
 import BarDetailsScreen from "./BarDetailsScreen"
-import { distanceMeters } from "@/lib/geo"
+import { distanceMeters, lineStringLngLat } from "@/lib/geo"
 import { cn } from "@/lib/utils"
 import { fetchOsrmRoute } from "@/lib/osrmRoute"
 import UserLocationMarker from "./UserLocationMarker"
@@ -13,6 +13,19 @@ export default function MapViewGL({ bars, positionUser }) {
   const [selectedBar, setSelectedBar] = useState(null)
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [routeGeojson, setRouteGeojson] = useState(null)
+  const routeCacheRef = useRef(new globalThis.Map())
+
+  const showImmediateRoute = useCallback(
+    (bar) => {
+      if (!bar || !positionUser) return
+      const lat = Number(bar.lat)
+      const lng = Number(bar.lng)
+      const [uLat, uLng] = positionUser
+      if (Number.isNaN(lat) || Number.isNaN(lng)) return
+      setRouteGeojson(lineStringLngLat(uLng, uLat, lng, lat))
+    },
+    [positionUser]
+  )
 
   /** Al elegir un bar: pedir ruta por calles y mostrar solo la línea (sin mover la cámara). */
   useEffect(() => {
@@ -29,16 +42,25 @@ export default function MapViewGL({ bars, positionUser }) {
       return
     }
 
+    const cacheKey = `${uLat},${uLng}->${lat},${lng}`
+    const cached = routeCacheRef.current.get(cacheKey)
+    if (cached) {
+      setRouteGeojson(cached)
+      return
+    }
+
     let cancelled = false
 
     ;(async () => {
       try {
         const feature = await fetchOsrmRoute([uLng, uLat], [lng, lat], "driving")
         if (cancelled) return
-        setRouteGeojson(feature ?? null)
+        if (feature) {
+          routeCacheRef.current.set(cacheKey, feature)
+          setRouteGeojson(feature)
+        }
       } catch (e) {
         console.error(e)
-        if (!cancelled) setRouteGeojson(null)
       }
     })()
 
@@ -62,13 +84,10 @@ export default function MapViewGL({ bars, positionUser }) {
   )
 
   const openDirectionsExternas = useCallback(() => {
+    // Bloqueado por el momento: no abrimos navegación externa (ej. Google Maps).
+    // El mapa sigue mostrando la ruta visual interna por calles (OSRM) cuando se selecciona un bar.
     if (!selectedBar || !positionUser) return
-    const lat = Number(selectedBar.lat)
-    const lng = Number(selectedBar.lng)
-    const [uLat, uLng] = positionUser
-    if (Number.isNaN(lat) || Number.isNaN(lng)) return
-    const url = `https://www.google.com/maps/dir/?api=1&origin=${uLat},${uLng}&destination=${lat},${lng}&travelmode=driving`
-    window.open(url, "_blank", "noopener,noreferrer")
+    console.info("[Spot] 'Cómo llegar' bloqueado por ahora (sin abrir Google Maps).")
   }, [selectedBar, positionUser])
 
   const handleMapClick = useCallback(() => {
@@ -140,6 +159,7 @@ export default function MapViewGL({ bars, positionUser }) {
                   className="map-marker-pin cursor-pointer border-0 bg-transparent p-0 outline-none focus-visible:ring-2 focus-visible:ring-[#00D1FF] rounded-full"
                   onClick={(e) => {
                     e.stopPropagation()
+                    showImmediateRoute(bar)
                     setSelectedBar(bar)
                   }}
                   aria-label={`Ver ${bar.razon_social ?? "bar"}`}

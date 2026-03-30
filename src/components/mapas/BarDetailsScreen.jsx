@@ -190,11 +190,13 @@ export default function BarDetailsScreen({
           <div className="mt-4 grid grid-cols-2 gap-3">
             <button
               type="button"
-              onClick={onNavigate}
-              className="rounded-2xl bg-black/25 border border-white/10 backdrop-blur px-3 py-3 text-white/95 flex items-center justify-center gap-2 hover:bg-black/40 transition-colors"
+              disabled
+              aria-disabled="true"
+              onClick={(e) => e.preventDefault()}
+              className="rounded-2xl bg-black/25 border border-white/10 backdrop-blur px-3 py-3 text-white/95 flex items-center justify-center gap-2 hover:bg-black/40 transition-colors opacity-60 cursor-not-allowed"
             >
               <MapPin className="size-5 text-[#7eefff]" />
-              <span className="text-[13px] font-black">Cómo llegar</span>
+              <span className="text-[13px] font-black">Cómo llegar (bloqueado)</span>
             </button>
 
             <button

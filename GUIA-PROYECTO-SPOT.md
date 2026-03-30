@@ -1,218 +1,317 @@
-# Guía del proyecto Spot (frontend + backend)
+# GUIA PROYECTO SPOT (estado actual)
 
-Documento pensado para entender **qué es Spot**, **cómo está armado**, **qué hace cada parte** y **cómo encajan el front y la API**. Podés usarlo como apuntes paso a paso.
-
----
-
-## 1. Idea del producto de spot 
-
-**Problema:** La gente que quiere salir de noche no tiene un solo lugar donde ver, para cada bar, ambiente, música, promos y qué pasa esa noche; la info está repartida en redes, Google Maps y boca a boca.
-
-**Solución Spot:** Una app que **centralice** la información y permita **descubrir bares cercanos** y decidir rápido a cuál ir.
-
-**Estado actual del código:** Tenés un **mapa con búsqueda por radio** y datos de negocios desde una **API en C#**. Funciones “grandes” del producto (promos en vivo, eventos de la noche, etc.) pueden apoyarse en tablas/modelo que ya existan en base, pero **la UI principal hoy es el mapa + API de negocios/usuarios**.
+Esta guia describe el estado real del proyecto `SpotFront` hoy: que hace cada carpeta, que hace cada archivo importante, cual es el flujo de datos, que parte esta activa en produccion y que parte quedo legacy.
 
 ---
 
-## 2. Arquitectura general (cómo se conecta todo)
+## 1) Objetivo del frontend
 
+Spot es una app para descubrir bares cercanos.
+
+La experiencia activa actual es:
+- obtener ubicacion del usuario;
+- buscar negocios cercanos en API;
+- mostrar bares en mapa;
+- ver card resumida y pantalla de detalle del bar;
+- ruta visual interna por calles (OSRM).
+  - Nota: el boton "Cómo llegar" esta bloqueado por ahora (no abre navegacion externa).
+
+No hay modulo de dashboard/admin en el frontend actual.
+
+---
+
+## 2) Arquitectura general
+
+```txt
+Usuario (navegador)
+   -> React + Vite (SpotFront)
+   -> GET /api/negocios/cercanos?lat=...&lng=...&radioKm=...
+   -> API ASP.NET (backend)
+   -> SQL Server (negocios, usuarios, ubicaciones)
 ```
-[ Navegador: React + mapa ]
-        |
-        |  HTTP GET /api/negocios/cercanos?lat=&lng=&radioKm=
-        |  (en desarrollo: Vite hace de “puente” hacia el puerto del IIS Express)
-        v
-[ ASP.NET Web API (.NET Framework) ]
-        |
-        |  Entity Framework 6 + EDMX (Database First)
-        v
-[ SQL Server: base `Spot`, tablas negocio, usuario, etc. ]
-```
 
-- **Frontend:** app web en tu PC, suele correr en `http://localhost:5173` (Vite).
-- **Backend:** API en `http://localhost:53957` (puerto típico de IIS Express; puede variar según el `.csproj`).
-- **Base de datos:** SQL Server; la cadena de conexión está en `Web.config` del backend (`SpotEntities`).
+En desarrollo:
+- Vite corre en `http://localhost:5173`
+- El backend suele correr en `http://localhost:53957`
+- `vite.config.js` hace proxy `/api` y `/osrm` para evitar CORS.
 
 ---
 
-## 3. Stack tecnológico
+## 3) Flujo completo de la app (paso a paso)
 
-### Frontend (`SpotFront`)
-
-| Tecnología | Para qué sirve |
-|------------|----------------|
-| **Vite** | Empaqueta y sirve el proyecto en desarrollo (`npm run dev`). |
-| **React 19** | Interfaz por componentes. |
-| **Leaflet + react-leaflet** | Mapa interactivo (OpenStreetMap). |
-| **Tailwind CSS** | Estilos utilitarios. |
-| **Componentes tipo shadcn** (`components/ui`) | Botones, inputs, etc. |
-| **Variables `VITE_*`** | Configuración (`.env`), por ejemplo URL base de la API. |
-
-### Backend (`spotBackend` / `WebApplication1`)
-
-| Tecnología | Para qué sirve |
-|------------|----------------|
-| **ASP.NET Web API 2** | Expone rutas REST (`/api/...`). |
-| **Entity Framework 6** | Acceso a datos. |
-| **EDMX (`spotModel.edmx`)** | Modelo **Database First**: el esquema viene de SQL Server. |
-| **SQL Server + tipo `geography`** | Guarda la ubicación de cada negocio y calcula distancias. |
-| **Swagger** | Documentación y prueba de endpoints en el navegador. |
-| **Newtonsoft.Json** | Serialización JSON en la API. |
+1. `index.html` carga `src/main.jsx`.
+2. `src/main.jsx` monta React, importa estilos globales, y envuelve app con `ApiProvider`.
+3. `src/App.jsx`:
+   - llama a `obtenerUbicacionGps` para lat/lng del usuario;
+   - dispara busqueda inicial una sola vez (`VITE_MAPA_RADIO_KM`, default 10 km);
+   - guarda resultados en estado `bars`;
+   - renderiza `MapViewGL` + `BottomNav`.
+4. `src/hooks/getNegocios.js` hace la llamada a `negocios/cercanos` y normaliza datos.
+5. `src/components/mapas/MapViewGL.jsx`:
+   - muestra marcador del usuario;
+   - muestra marcador por cada bar;
+   - al seleccionar bar abre `BarBottomCard`;
+   - al abrir detalle muestra `BarDetailsScreen`;
+   - pide ruta por calles con `fetchOsrmRoute`.
+6. `src/lib/osrmRoute.js` llama a OSRM y devuelve GeoJSON para pintar la linea en el mapa.
 
 ---
 
-## 4. Frontend — estructura de carpetas (qué contiene cada cosa)
+## 4) Estructura de carpetas y que hace cada una
 
-Ruta base: `SpotFront/src/`
+## Raiz del proyecto
 
-| Ruta | Contenido |
-|------|-----------|
-| `main.jsx` | Entrada de la app: monta React, importa estilos globales y Leaflet, envuelve todo en `ApiProvider`. |
-| `App.jsx` | Pantalla principal: estado de la lista de bares, ubicación, búsqueda y mapa. |
-| `ApiContext.jsx` | Cliente HTTP (`get`, `post`, etc.) usando `fetch` y `VITE_API_URL`. |
-| `index.css` / `App.css` | Estilos globales y del layout. |
-| `hooks/getNegocios.js` | Funciones que llaman a la API de negocios (listar, uno por id, **cercanos**). |
-| `hooks/obtenerUbicacionGps.js` | Obtiene lat/lng con `navigator.geolocation`. Opcional: coords fijas con `VITE_DEV_LAT` / `VITE_DEV_LNG` en `.env` para pruebas sin GPS real. |
-| `hooks/negociosCercanos.js` | Hook auxiliar con fórmula Haversine (distancia); puede usarse para filtrar en cliente si hiciera falta. |
-| `components/mapas/MapView.jsx` | Mapa Leaflet: usuario + marcadores de bares. |
-| `components/mapas/MapMarkers.jsx` | Un marcador + popup de texto. |
-| `components/mapas/MapControls.jsx` | Botones zoom +/- y centrar en el usuario. |
-| `components/serch/Serch.jsx` | Barra superior: radio en km + botón de búsqueda. |
-| `components/cards/NegociosCards.jsx` | Carrusel de tarjetas de bares (preparado para otro formato de datos; hoy suele estar comentado en `App.jsx`). |
-| `components/navegation/bottomNavegation.jsx` | Barra inferior (Explorar, Mapa, Promos, etc.); hoy es más visual que funcional. |
-| `components/ui/*` | Botones, inputs, card, carousel, etc. (patrón shadcn). |
-| `lib/utils.ts` | Utilidades (por ejemplo `cn` para clases CSS). |
+- `src/`: codigo fuente frontend.
+- `public/`: assets publicos servidos tal cual.
+- `dist/`: salida de build de produccion.
+- `node_modules/`: dependencias instaladas.
 
-Archivos en la raíz del proyecto:
+Archivos de configuracion en raiz:
+- `package.json`: scripts y dependencias.
+- `vite.config.js`: config Vite, alias `@`, proxy API/OSRM.
+- `eslint.config.js`: reglas de lint.
+- `postcss.config.js` y `postcss.config.cjs`: config PostCSS/Tailwind (hay duplicidad legacy).
+- `tsconfig.json`: alias de paths para tooling (`@/*`).
+- `components.json`: config de shadcn/ui.
+- `index.html`: HTML base del frontend.
+- `.env`: variables de entorno (`VITE_*`).
+- `.gitignore`: exclusiones git.
 
-| Archivo | Uso |
-|---------|-----|
-| `.env` | `VITE_API_URL`, opcional `VITE_DEV_LAT` / `VITE_DEV_LNG`. |
-| `vite.config.js` | Plugin React, Tailwind, alias `@` → `src`, **proxy `/api` → backend** (evita CORS en desarrollo). |
-| `package.json` | Scripts `dev`, `build`, dependencias. |
+## `src/`
 
----
+- `main.jsx`: entrypoint React.
+- `App.jsx`: shell principal de la app mapa.
+- `ApiContext.jsx`: cliente HTTP compartido (`get`, `post`, `put`, `delete`).
+- `index.css`: base Tailwind + tema/tokens.
+- `App.css`: estilos especificos de mapa, markers, paneles y animaciones.
+- `assets/`: assets locales (ejemplo: `react.svg`, hoy no usado).
 
-## 5. Frontend — flujo paso a paso (cómo funciona la pantalla del mapa)
+## `src/hooks/`
 
-1. **`main.jsx`** renderiza `<App />` dentro de `<ApiProvider>` para que cualquier componente pueda usar `useApi()` / hooks que llamen a la API.
-2. **`obtenerUbicacionGps`** pide permiso de ubicación (o usa coords de desarrollo si configuraste `.env`).
-3. Cuando ya hay posición, **`App.jsx`** hace una **primera búsqueda automática** a **10 km** de radio (una sola vez al inicio).
-4. El usuario puede cambiar el **radio en km** en **`Serch`** y pulsar el ícono de lupa: se llama otra vez a la API con ese radio.
-5. **`getNegocios.js`** arma la URL:  
-   `GET {VITE_API_URL}negocios/cercanos?lat=...&lng=...&radioKm=...`  
-   Con `VITE_API_URL=/api/`, en desarrollo Vite reenvía eso al backend en el puerto 53957.
-6. La respuesta es un **array JSON** de negocios con `id_negocio`, `razon_social`, `lat`, `lng`, `distancia`, etc.
-7. **`App.jsx`** guarda ese array en el estado `bars` y lo pasa a **`MapView`**.
-8. **`MapView`** dibuja un marcador del usuario y uno por cada bar con coords válidas; el texto del popup incluye nombre y distancia.
+- `getNegocios.js`: acceso API de negocios + normalizacion de payload.
+- `obtenerUbicacionGps.js`: geolocalizacion (real o por variables de entorno).
+- `ejecutarNegociosCercanos.js`: hook de distancia acumulada (legacy, no activo en flujo principal).
 
-**Importante:** La búsqueda usa **tu posición actual** (o las coords de prueba). Si el bar está lejos de ese punto y el radio es chico, la lista puede venir vacía aunque el bar exista en la base.
+## `src/lib/`
 
----
+- `geo.js`: funciones de geografia (Haversine, formato distancia, LineString).
+- `osrmRoute.js`: integra OSRM para generar ruta por calles.
+- `utils.ts`: helper `cn(...)` para combinar clases CSS.
 
-## 6. Backend — estructura principal
+## `src/components/`
 
-Ruta típica: `spotBackend/WebApplication1/`
-
-| Elemento | Rol |
-|----------|-----|
-| `Web.config` | Cadena de conexión `SpotEntities`, `entityFramework`, handlers IIS. |
-| `Global.asax.cs` | Arranque: rutas Web API, Swagger, carga de DLLs de SQL Server Types si hace falta. |
-| `App_Start/WebApiConfig.cs` | Rutas Web API (`api/{controller}/{id}`), JSON con Newtonsoft. |
-| `App_Start/SwaggerConfig.cs` | Swagger UI. |
-| `Controllers/negociosController.cs` | API de negocios (listado, uno por id, **cercanos**, alta con `POST`, etc.). |
-| `Controllers/usuariosController.cs` | Registro, listado, perfil, borrado, cambio de contraseña, etc. |
-| `Dtos/` | Objetos de transferencia: qué campos entran y salen en JSON (`UsuarioDTO`, `postNegocioDto`, etc.). |
-| `spotModel.edmx` + `.tt` | Modelo EF enlazado a la base `Spot`. |
-| `spotModel.Context.cs` | Clase `SpotEntities` (`DbContext`): conjuntos `negocio`, `usuario`, etc. |
-| Entidades `negocio.cs`, `usuario.cs`, … | Clases generadas o parciales que representan tablas. |
+- `mapas/`: componentes del mapa y UX principal.
+- `navegation/`: barra de navegacion inferior.
+- `cards/`: tarjetas de negocio (legacy no activadas en `App.jsx`).
+- `serch/`: barra de busqueda por radio (legacy no activa).
+- `ui/`: componentes base reutilizables (shadcn/radix).
 
 ---
 
-## 7. Backend — qué hace cada parte clave
+## 5) Archivo por archivo (frontend)
 
-### `SpotEntities` (`spotModel.Context.cs`)
+## Entrypoint y app
 
-- Es el **contexto de Entity Framework**.
-- Hereda de `DbContext` y expone `DbSet<negocio>`, `DbSet<usuario>`, etc.
-- La cadena de conexión se toma de `Web.config` con el nombre **`SpotEntities`**.
+- `src/main.jsx`
+  - importa `index.css`, CSS de Leaflet, CSS de MapLibre;
+  - monta `<App />` dentro de `<ApiProvider>`.
 
-### `negociosController`
+- `src/App.jsx`
+  - estado `bars`;
+  - usa `useGetNegocios()` y `obtenerUbicacionGps()`;
+  - hace busqueda inicial automatica de cercanos;
+  - renderiza `MapViewGL` y `BottomNav`.
 
-- **`GET api/negocios`** — Lista negocios (según la implementación actual, a veces devuelve lista en el primer método).
-- **`GET api/negocios/{id}`** — Detalle por id.
-- **`GET api/negocios/cercanos`** — Parámetros: `lat`, `lng`, `radioKm`.  
-  Convierte el radio a metros, usa **`DbGeography`** y **`Distance`** en SQL para filtrar negocios con `Location` dentro del radio, ordena por distancia y limita cantidad (ej. 20).
-- **`POST` con ruta `negocio/{id_user}`** — Crea un negocio asociado a un usuario **propietario**; guarda `Location` como punto geográfico.
-- **`PUT` / `DELETE`** — Según versión: actualizar o borrar negocio.
+- `src/ApiContext.jsx`
+  - abstrae `fetch` en metodos `get/post/put/delete`;
+  - usa `VITE_API_URL`;
+  - soporta `treat404AsEmpty` para convertir ciertos 404 en `[]`.
 
-### `usuariosController`
+## Hooks
 
-- **`GET api/usuarios`** / **`GET api/usuarios/{id}`** — Listar y ver usuario.
-- **`POST api/usuarios`** — Registro con validaciones; el **rol** viene de un enum (`cliente`, `propietario`); la contraseña se guarda **hasheada** (método tipo `HashPassword` en el controlador).
-- **`PUT`**, **`DELETE`**, **`PATCH`**, cambio de contraseña, etc. — Mantenimiento de cuentas.
+- `src/hooks/getNegocios.js`
+  - endpoints de negocios;
+  - normaliza campos del backend (`lat`, `lng`, etc.);
+  - fallback: si `cercanos` no devuelve lista util, intenta `GET /negocios` y filtra por Haversine.
 
-### DTOs
+- `src/hooks/obtenerUbicacionGps.js`
+  - usa `navigator.geolocation.watchPosition`;
+  - permite override de ubicacion con `VITE_DEV_LAT` y `VITE_DEV_LNG`.
 
-Sirven para **no exponer** directamente las entidades EF y para validar con **DataAnnotations** (`[Required]`, `[EmailAddress]`, etc.).
+- `src/hooks/ejecutarNegociosCercanos.js`
+  - trackea distancia recorrida y dispara callback por umbral;
+  - actualmente no participa del flujo principal.
 
-### Swagger
+## Mapa (flujo activo)
 
-- Al ejecutar la API, suele abrirse o podés ir a la ruta de **Swagger UI** para probar métodos sin el front.
+- `src/components/mapas/MapViewGL.jsx` (ACTIVO)
+  - mapa principal con MapLibre;
+  - markers de usuario y bares;
+  - seleccion de bar;
+  - muestra card inferior y detalle;
+  - dibuja ruta GeoJSON al bar seleccionado.
+
+- `src/components/mapas/MapControls.jsx` (ACTIVO)
+  - controles de mapa (brujula + boton centrar usuario).
+
+- `src/components/mapas/UserLocationMarker.jsx` (ACTIVO)
+  - visual del punto de usuario.
+
+- `src/components/mapas/BarBottomCard.jsx` (ACTIVO)
+  - card resumida del bar seleccionado.
+
+- `src/components/mapas/BarDetailsScreen.jsx` (ACTIVO)
+  - pantalla/modal de detalle;
+  - favoritos y puntos en `localStorage`;
+  - botones de accion (guardar, check-in; "Cómo llegar" bloqueado por ahora).
+
+## Componentes legacy (presentes, pero no activos en App principal)
+
+- `src/components/mapas/MapView.jsx`
+  - version anterior con Leaflet.
+
+- `src/components/mapas/MapMarkers.jsx`
+  - helper de markers para `MapView.jsx`.
+
+- `src/components/MapaNegocios.jsx`
+  - implementacion alternativa antigua con Leaflet y fetch directo.
+
+- `src/components/cards/NegociosCards.jsx`
+  - carrusel de cards de negocios.
+
+- `src/components/serch/Serch.jsx`
+  - input para radio + boton de busqueda.
+
+## Navegacion y UI base
+
+- `src/components/navegation/bottomNavegation.jsx` (ACTIVO visualmente)
+  - barra inferior con tabs (Promos, Mapa, Perfil);
+  - hoy no cambia de pantalla, solo emite `onChange`.
+
+- `src/components/ui/*.tsx`
+  - libreria de componentes base: `button`, `card`, `input`, `carousel`, etc.
+  - usados por pantallas y cards para consistencia visual.
+
+## Utilidades y estilos
+
+- `src/lib/geo.js`
+  - calculo distancia en metros y formateo.
+
+- `src/lib/osrmRoute.js`
+  - llamada a OSRM y retorno de Feature GeoJSON.
+
+- `src/lib/utils.ts`
+  - `cn` para merge de clases.
+
+- `src/index.css`
+  - Tailwind v4 + tokens de diseno + modo dark.
+
+- `src/App.css`
+  - layout de mapa, posicion de controles, animaciones, estilos de markers y scroll.
 
 ---
 
-## 8. Cómo se “creó” el proyecto (origen típico)
+## 6) Variables de entorno (.env)
 
-No hay un único “botón mágico”, pero el flujo habitual es:
+Variables usadas en frontend:
 
-1. **Backend:** Proyecto **ASP.NET Web Application** en Visual Studio, plantilla con **Web API**, después **Entity Framework** con **modelo desde base de datos** (EDMX) apuntando a SQL Server.
-2. **Frontend:** `npm create vite@latest` (o similar) con plantilla **React**, después instalar **leaflet**, **react-leaflet**, **Tailwind**, etc.
-3. **Conexión:** Definir la URL de la API en `.env` y, en desarrollo, usar **proxy en Vite** hacia el mismo host/puerto donde corre IIS Express.
+- `VITE_API_URL`
+  - Ejemplo: `/api/`
+  - Prefijo para llamadas HTTP en `ApiContext`.
 
----
+- `VITE_MAPA_RADIO_KM`
+  - Radio inicial de busqueda en `App.jsx`.
+  - Si falta o es invalido, default = `10`.
 
-## 9. Cómo se conectan front y back (importante)
+- `VITE_DEV_LAT`
+- `VITE_DEV_LNG`
+  - Coordenadas fijas para pruebas sin GPS real.
 
-- En **desarrollo**, `VITE_API_URL=/api/` hace que el navegador llame a `http://localhost:5173/api/...` y **Vite** reenvíe a `http://localhost:53957/api/...`. Así se evita el bloqueo **CORS** entre puertos distintos.
-- El backend debe estar **corriendo** (F5 en Visual Studio) en el puerto que uses en `vite.config.js` (`target`).
-- **Producción:** el proxy de Vite **no existe**; ahí se suele publicar el front en un servidor estático y la API en otro dominio, configurando **CORS** en la API o un **reverse proxy** (nginx, Azure, etc.).
+- `VITE_OSRM_URL` (opcional en produccion)
+  - Base URL de OSRM fuera de desarrollo.
 
----
-
-## 10. Variables de entorno del front (`.env`)
-
-| Variable | Ejemplo | Uso |
-|----------|---------|-----|
-| `VITE_API_URL` | `/api/` | Prefijo de todas las llamadas HTTP. |
-| `VITE_DEV_LAT` / `VITE_DEV_LNG` | coords en decimal | Opcional: fija la posición para probar sin estar en el lugar. |
-
-Tras cambiar `.env`, hay que **reiniciar** `npm run dev`.
+Nota: al cambiar `.env`, reiniciar `npm run dev`.
 
 ---
 
-## 11. Cómo ejecutar todo (checklist)
+## 7) Conexion front-back (desarrollo y produccion)
 
-1. **SQL Server** con la base **`Spot`** y el esquema que espera el EDMX.
-2. **Backend:** abrir la solución `.sln`, **F5**. Comprobar Swagger y que la cadena de conexión en `Web.config` apunte a tu instancia (`.\SQL`, `SERVIDOR\SQL`, etc.).
-3. **Frontend:** en `SpotFront`, `npm install` una vez; luego `npm run dev`.
-4. Navegador: permitir **ubicación**; probar búsqueda y ver la pestaña **Red** (F12) si algo falla.
+## Desarrollo
 
----
+- El front llama, por ejemplo: `/api/negocios/cercanos?...`
+- Vite reenvia al backend (`http://localhost:53957`) por proxy.
+- Para rutas OSRM, el front llama `/osrm/...` y Vite reenvia a `https://router.project-osrm.org`.
 
-## 12. Qué podés extender después (línea de producto)
+## Produccion
 
-- Activar **`NegociosCards`** y unificar el formato de datos con el del mapa.
-- Endpoints y pantallas para **promociones**, **horarios**, **eventos “esta noche”** (muchas veces ya hay tablas en el modelo EF).
-- **Autenticación JWT** en la API y login en el front.
-- Panel para **dueños** (aprobar y gestionar bares), si la lógica aún no está en la API que tengas hoy.
-
----
-
-## 13. Resumen en una frase
-
-**Spot** es una app de descubrimiento de bares: el **frontend React** muestra un **mapa** y pide **negocios cercanos** a la **API ASP.NET**, que consulta **SQL Server** con **Entity Framework** y **geografía** para calcular distancias.
+- El proxy de Vite no existe.
+- Debe existir:
+  - o una URL real en `VITE_API_URL` y `VITE_OSRM_URL`,
+  - o un reverse proxy en infraestructura.
 
 ---
 
-*Última actualización alineada con el código en `SpotFront` y `spotBackend/WebApplication1`. Si movés carpetas o renombrás proyectos, revisá rutas y `Web.config`.*
+## 8) Scripts principales
+
+En `package.json`:
+
+- `npm run dev` -> arranca entorno local.
+- `npm run build` -> genera build de produccion en `dist/`.
+- `npm run preview` -> sirve build local.
+- `npm run lint` -> corre ESLint.
+
+---
+
+## 9) Estado del proyecto (activo vs legacy)
+
+## Activo en flujo principal
+
+- `main.jsx`
+- `App.jsx`
+- `ApiContext.jsx`
+- `hooks/getNegocios.js`
+- `hooks/obtenerUbicacionGps.js`
+- `components/mapas/MapViewGL.jsx`
+- `components/mapas/MapControls.jsx`
+- `components/mapas/BarBottomCard.jsx`
+- `components/mapas/BarDetailsScreen.jsx`
+- `components/mapas/UserLocationMarker.jsx`
+- `components/navegation/bottomNavegation.jsx`
+- `lib/geo.js`
+- `lib/osrmRoute.js`
+- `lib/utils.ts`
+- `index.css`
+- `App.css`
+
+## Legacy (en repo, pero no usados por `App.jsx` actual)
+
+- `components/mapas/MapView.jsx`
+- `components/mapas/MapMarkers.jsx`
+- `components/MapaNegocios.jsx`
+- `components/cards/NegociosCards.jsx`
+- `components/serch/Serch.jsx`
+- `hooks/ejecutarNegociosCercanos.js`
+- `src/assets/react.svg` y `public/vite.svg` (assets de plantilla)
+
+---
+
+## 10) Checklist rapido para correr y validar
+
+1. Backend corriendo en el puerto configurado en `vite.config.js`.
+2. Front:
+   - `npm install`
+   - `npm run dev`
+3. Dar permisos de ubicacion en navegador.
+4. Confirmar en pantalla:
+   - aparece marcador de usuario;
+   - se cargan bares cercanos;
+   - al tocar un bar abre card/detalle;
+   - se dibuja ruta al bar seleccionado.
+
+---
+
+## 11) Resumen ejecutivo
+
+SpotFront hoy es una app React orientada 100% a experiencia de usuario en mapa, con busqueda de bares cercanos, detalle de negocio y enrutamiento visual, conectada a una API ASP.NET mediante proxy en desarrollo.
+
+La base esta lista para produccion del flujo mapa. El codigo legacy sigue en el repo y puede removerse en una etapa de limpieza final si se quiere reducir complejidad.
