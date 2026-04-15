@@ -1,14 +1,13 @@
 import { apiUrl } from "@/lib/apiUrl"
 
 /**
- * Ruta POST de registro. En Web API 2 con ruta `api/{controller}/{id}` (sin `{action}`),
- * un segmento extra tipo `.../registrarUsuarios` no es una acción: suele usarse
- * `POST /api/usuarios?id_rol=...` y el método `Post` del controlador.
- * Si tu API define `[Route("registrarUsuarios")]` u otra, configurá `VITE_API_REGISTRO_PATH`.
+ * POST attribute routing en el API: `api/usuarios/registrarUsuarios?id_rol=...`
+ * Body: { email, contraseña }. Respuesta 201 { mensaje }.
+ * Sobrescribir con `VITE_API_REGISTRO_PATH` si cambia el contrato.
  */
 const REGISTRO_PATH =
   String(import.meta.env.VITE_API_REGISTRO_PATH ?? "").trim() ||
-  "/api/usuarios"
+  "/api/usuarios/registrarUsuarios"
 
 /** Listado de roles (público en dev; si el API exige JWT, iniciá sesión antes). */
 export async function fetchRoles() {
@@ -43,7 +42,14 @@ export async function registrarUsuario(body, idRol) {
   })
   if (!res.ok) {
     const text = await res.text()
-    throw new Error(text.trim() || `Error ${res.status}`)
+    let msg = text.trim()
+    try {
+      const j = JSON.parse(text)
+      msg = j.Message ?? j.message ?? j.mensaje ?? msg
+    } catch {
+      /* texto plano */
+    }
+    throw new Error(msg || `Error ${res.status}`)
   }
   const ct = res.headers.get("content-type") ?? ""
   if (ct.includes("application/json")) {
