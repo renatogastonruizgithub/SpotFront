@@ -19,8 +19,8 @@ function toMapBar(row) {
 }
 
 export const useGetNegocios = () => {
-  const { get, post, put, delete: del } = useApi();
-  const endpoint = 'negocios';
+  const { get, post } = useApi();
+  const endpoint = '/api/negocios';
 
   const listarNegocios = async () => {
     return await get(endpoint);

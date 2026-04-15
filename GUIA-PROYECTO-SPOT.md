@@ -16,7 +16,7 @@ La experiencia activa actual es:
 - ruta visual interna por calles (OSRM).
   - Nota: el boton "Cómo llegar" esta bloqueado por ahora (no abre navegacion externa).
 
-No hay modulo de dashboard/admin en el frontend actual.
+La parte administrativa (dashboard para propietario) existe en otro proyecto del ecosistema Spot, no en este repositorio `SpotFront`.
 
 ---
 
@@ -312,6 +312,75 @@ En `package.json`:
 
 ## 11) Resumen ejecutivo
 
-SpotFront hoy es una app React orientada 100% a experiencia de usuario en mapa, con busqueda de bares cercanos, detalle de negocio y enrutamiento visual, conectada a una API ASP.NET mediante proxy en desarrollo.
+SpotFront hoy es una app React orientada a experiencia de usuario en mapa, con busqueda de bares cercanos, detalle de negocio y enrutamiento visual, conectada a una API ASP.NET mediante proxy en desarrollo.
+
+Ademas, el ecosistema Spot contempla una parte administrativa para propietarios en otro proyecto, donde un mismo usuario puede tener rol de usuario y rol de propietario cuando crea su bar.
 
 La base esta lista para produccion del flujo mapa. El codigo legacy sigue en el repo y puede removerse en una etapa de limpieza final si se quiere reducir complejidad.
+
+---
+
+## 12) Definicion V1 (MVP) - Spot
+
+La V1 de Spot sera una version basica pero funcional centrada en **Mapa**, **Promos**, **Perfil** y la base del flujo de **Propietario** (alta inicial de bar en el modulo administrativo del ecosistema). El objetivo es cerrar un flujo principal estable antes de agregar funcionalidades avanzadas.
+
+### Objetivo de la V1
+
+Entregar una experiencia minima util donde el usuario pueda descubrir bares cercanos desde el mapa, consultar promos basicas, gestionar un perfil simple y contemplar que un usuario tambien puede operar como propietario al crear su bar (en el proyecto administrativo), sobre una arquitectura clara y mantenible.
+
+### Alcance (SI incluye)
+
+1. **Mapa (flujo principal)**
+   - obtener ubicacion del usuario (GPS);
+   - consultar bares cercanos en API;
+   - mostrar bares en mapa;
+   - abrir card y detalle del bar;
+   - dibujar ruta visual interna (OSRM) hacia el bar seleccionado.
+
+2. **Promos**
+   - mostrar promos activas asociadas a bares;
+   - visualizar datos minimos de promo (titulo, descripcion corta, vigencia);
+   - acceso a promos desde navegacion inferior o desde detalle del bar.
+
+3. **Perfil de usuario (basico)**
+   - visualizar datos basicos del usuario;
+   - guardar y consultar favoritos;
+   - persistencia local de acciones basicas (ejemplo: favoritos en `localStorage`).
+
+4. **Base administrativa de propietario (en otro proyecto)**
+   - contemplar el doble rol: usuario y propietario;
+   - permitir alta inicial de bar para el propietario en el modulo administrativo;
+   - mantener contrato de datos consistente entre SpotFront y el modulo administrativo.
+
+### No alcance (NO incluye en V1)
+
+- notificaciones push;
+- sistema de puntos avanzado en backend;
+- recomendaciones inteligentes;
+- navegacion externa completa en "Como llegar";
+- features de analytics/reporteria avanzada.
+
+### Arquitectura base esperada
+
+- frontend en React + Vite con modulos por feature (`mapas`, `promos`, `perfil`);
+- consumo de API mediante capa comun (`ApiContext`) y hooks de dominio;
+- separacion clara entre UI, logica de negocio y acceso a datos;
+- variables de entorno definidas para API, radio y OSRM;
+- mantenimiento de flujo activo y reduccion progresiva de codigo legacy.
+
+### Criterios de aceptacion (Definition of Done V1)
+
+La V1 se considera terminada cuando:
+
+1. el usuario abre la app y puede otorgar permisos de ubicacion;
+2. se visualizan bares cercanos en el mapa sin errores criticos;
+3. al seleccionar un bar se muestran card, detalle y ruta visual;
+4. el usuario puede consultar promos basicas;
+5. el usuario puede guardar y ver favoritos desde perfil;
+6. el flujo principal es estable y repetible en entorno local.
+
+### Punto final de la V1
+
+**Declaracion de cierre sugerida:**
+
+> "La V1 de Spot queda cerrada al cumplir el flujo base de Mapa + Promos + Perfil basico, con arquitectura estable y sin errores criticos. Toda funcionalidad avanzada pasa a la siguiente iteracion."

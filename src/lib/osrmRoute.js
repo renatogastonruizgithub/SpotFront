@@ -1,7 +1,7 @@
 /**
  * Ruta por calles vía OSRM (Open Source Routing Machine).
- * En desarrollo: usa proxy de Vite `/osrm` → router.project-osrm.org
- * En producción: definí `VITE_OSRM_URL` (ej. https://router.project-osrm.org) o mismo origen con proxy reverso.
+ * En desarrollo: proxy Vite `/osrm` → routing.openstreetmap.de/routed-car (demo OSRM.org suele colgar).
+ * En producción: `VITE_OSRM_URL` o por defecto el mismo espejo FOSSGIS.
  *
  * @param {[number, number]} fromLngLat [lng, lat]
  * @param {[number, number]} toLngLat [lng, lat]
@@ -11,10 +11,11 @@
 export async function fetchOsrmRoute(fromLngLat, toLngLat, profile = "driving") {
   const [lng1, lat1] = fromLngLat
   const [lng2, lat2] = toLngLat
+  const defaultPublic =
+    "https://routing.openstreetmap.de/routed-car"
   const base = import.meta.env.DEV
     ? "/osrm"
-    : (import.meta.env.VITE_OSRM_URL?.replace(/\/$/, "") ||
-        "https://router.project-osrm.org")
+    : import.meta.env.VITE_OSRM_URL?.replace(/\/$/, "") || defaultPublic
   const url = `${base}/route/v1/${profile}/${lng1},${lat1};${lng2},${lat2}?overview=full&geometries=geojson`
 
   const res = await fetch(url)
