@@ -1,13 +1,13 @@
 import { apiUrl } from "@/lib/apiUrl"
 
 /**
- * POST attribute routing en el API: `api/usuarios/registrarUsuarios?id_rol=...`
- * Body: { email, contraseña }. Respuesta 201 { mensaje }.
+ * POST attribute routing en el API: `Auth/registrarUsuarios`
+ * Body: { email, contraseña, id_rol }. Respuesta 201.
  * Sobrescribir con `VITE_API_REGISTRO_PATH` si cambia el contrato.
  */
 const REGISTRO_PATH =
   String(import.meta.env.VITE_API_REGISTRO_PATH ?? "").trim() ||
-  "/api/usuarios/registrarUsuarios"
+  "/Auth/registrarUsuarios"
 
 /** Listado de roles (público en dev; si el API exige JWT, iniciá sesión antes). */
 export async function fetchRoles() {
@@ -24,18 +24,17 @@ export async function fetchRoles() {
 
 /**
  * Registro previo al login (público: sin Bearer).
- * El rol va solo en la query (`?id_rol=`), no en el JSON del usuario.
- * @param {{ email: string, contraseña: string }} body — solo email y contraseña
- * @param {number} idRol — se envía en la URL, no en el body
+ * @param {{ email: string, contraseña: string }} body
+ * @param {number} idRol — se envía dentro del body como `id_rol`
  */
 export async function registrarUsuario(body, idRol) {
   const payload = {
     email: body.email,
     contraseña: body.contraseña,
+    id_rol: Number(idRol),
   }
-  const q = new URLSearchParams({ id_rol: String(idRol) })
   const path = REGISTRO_PATH.startsWith("/") ? REGISTRO_PATH : `/${REGISTRO_PATH}`
-  const res = await fetch(`${apiUrl(path)}?${q.toString()}`, {
+  const res = await fetch(apiUrl(path), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
