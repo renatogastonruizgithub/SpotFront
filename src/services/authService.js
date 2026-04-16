@@ -36,6 +36,40 @@ export async function login(email, contraseña) {
   return { token, mensaje: data.mensaje ?? data.Mensaje }
 }
 
+/**
+ * @param {string} email
+ * @returns {Promise<string>}
+ */
+export async function reenviarActivacion(email) {
+  const res = await fetch(apiUrl("/Auth/reenviar-activacion"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  })
+
+  if (!res.ok) {
+    const msg = await readErrorBody(res)
+    throw new Error(msg || `Error ${res.status}`)
+  }
+
+  const ct = res.headers.get("content-type") ?? ""
+  if (ct.includes("application/json")) {
+    try {
+      const data = await res.json()
+      return data.message ?? data.Message ?? data.mensaje ?? JSON.stringify(data)
+    } catch {
+      /* fall through */
+    }
+  }
+
+  try {
+    const text = (await res.text()).trim()
+    return text || "Se reenvio el correo de activacion."
+  } catch {
+    return "Se reenvio el correo de activacion."
+  }
+}
+
 export function logout() {
   try {
     localStorage.removeItem(TOKEN_KEY)

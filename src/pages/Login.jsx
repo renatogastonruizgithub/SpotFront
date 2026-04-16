@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { Link, useNavigate, useLocation } from "react-router-dom"
-import { login } from "@/services/authService"
+import { login, reenviarActivacion } from "@/services/authService"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -27,18 +27,57 @@ export default function Login() {
   const [mostrarContraseña, setMostrarContraseña] = useState(false)
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
+  const [mostrarReenvio, setMostrarReenvio] = useState(registeredHint)
+  const [reenviando, setReenviando] = useState(false)
+  const [mensajeReenvio, setMensajeReenvio] = useState("")
+  const [errorReenvio, setErrorReenvio] = useState("")
+
+  const emailNormalizado = email.trim()
+  const emailValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailNormalizado)
+
+  function manejarCambioEmail(value) {
+    setEmail(value)
+    setMensajeReenvio("")
+    setErrorReenvio("")
+  }
 
   async function handleSubmit(e) {
     e.preventDefault()
     setError("")
+    setMensajeReenvio("")
+    setErrorReenvio("")
     setLoading(true)
     try {
       await login(email.trim(), contraseña)
       navigate(from, { replace: true })
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo iniciar sesión")
+      const msg = err instanceof Error ? err.message : "No se pudo iniciar sesión"
+      setError(msg)
+      const lowerMsg = msg.toLowerCase()
+      if (lowerMsg.includes("activar") || lowerMsg.includes("activada")) {
+        setMostrarReenvio(true)
+      }
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function handleReenviarActivacion() {
+    if (!emailValido || reenviando) return
+
+    setMensajeReenvio("")
+    setErrorReenvio("")
+    setReenviando(true)
+
+    try {
+      const mensaje = await reenviarActivacion(emailNormalizado)
+      setMensajeReenvio(mensaje)
+    } catch (err) {
+      setErrorReenvio(
+        err instanceof Error ? err.message : "No se pudo reenviar el correo de activación",
+      )
+    } finally {
+      setReenviando(false)
     }
   }
 
@@ -74,7 +113,7 @@ export default function Login() {
                 autoComplete="email"
                 placeholder="ejemplo@correo.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => manejarCambioEmail(e.target.value)}
                 required
                 className={fieldClass}
               />
@@ -126,6 +165,26 @@ export default function Login() {
             {error ? (
               <p className="text-sm font-medium text-red-600" role="alert">
                 {error}
+              </p>
+            ) : null}
+            {mostrarReenvio ? (
+              <button
+                type="button"
+                onClick={handleReenviarActivacion}
+                disabled={!emailValido || reenviando}
+                className="w-fit text-sm font-medium text-cyan-700 underline-offset-2 enabled:hover:underline disabled:cursor-not-allowed disabled:text-slate-400"
+              >
+                {reenviando ? "Enviando..." : "Reenviar correo de activación"}
+              </button>
+            ) : null}
+            {mensajeReenvio ? (
+              <p className="text-sm font-medium text-emerald-700" role="status">
+                {mensajeReenvio}
+              </p>
+            ) : null}
+            {errorReenvio ? (
+              <p className="text-sm font-medium text-red-600" role="alert">
+                {errorReenvio}
               </p>
             ) : null}
             <Button
