@@ -197,7 +197,7 @@ export default function Login() {
             <p className="text-center text-sm text-slate-600">
               ¿No tenés cuenta?{" "}
               <Link
-                to="/register"
+                to="/seleccionar-uso"
                 className="font-medium text-cyan-700 underline-offset-2 hover:underline"
               >
                 Registrate

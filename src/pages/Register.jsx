@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Link, useNavigate } from "react-router-dom"
+import { Link, Navigate, useLocation, useNavigate } from "react-router-dom"
 import { registrarUsuario } from "@/services/usuariosService"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -20,9 +20,20 @@ function idRolDesdeEnv() {
   return Number.isFinite(n) && n > 0 ? Math.floor(n) : 1
 }
 
+function parseRoleId(value) {
+  const n = Number(value)
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : null
+}
+
 export default function Register() {
   const navigate = useNavigate()
-  const idRolRegistro = idRolDesdeEnv()
+  const location = useLocation()
+  const roleFromState = parseRoleId(location.state?.roleId)
+  const roleNameFromState =
+    typeof location.state?.roleName === "string" ? location.state.roleName : ""
+  const idRolRegistro = roleFromState ?? idRolDesdeEnv()
+  const hasExplicitRole = roleFromState !== null
+  const roleLabel = roleNameFromState === "propietario" ? "Propietario" : "Cliente"
 
   const [email, setEmail] = useState("")
   const [contraseña, setContraseña] = useState("")
@@ -61,6 +72,10 @@ export default function Register() {
     }
   }
 
+  if (!hasExplicitRole) {
+    return <Navigate to="/seleccionar-uso" replace />
+  }
+
   return (
     <div
       className="flex min-h-[100dvh] items-center justify-center bg-gradient-to-b from-slate-100 to-slate-200 p-4 [color-scheme:light]"
@@ -69,8 +84,8 @@ export default function Register() {
         <CardHeader>
           <CardTitle className="text-xl text-cyan-700">Crear cuenta</CardTitle>
           <CardDescription className="text-slate-600">
-            El rol se asigna en el servidor vía query (no en el mismo JSON que email y
-            contraseña). Revisá tu correo para confirmar la cuenta antes de iniciar sesión.
+            Completa tus datos para crear tu cuenta como {roleLabel}. Revisá tu correo
+            para confirmar la cuenta antes de iniciar sesión.
           </CardDescription>
         </CardHeader>
         <CardContent>

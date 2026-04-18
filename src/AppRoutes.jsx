@@ -2,12 +2,14 @@ import { Routes, Route, Navigate } from "react-router-dom"
 import App from "./App.jsx"
 import Login from "./pages/Login.jsx"
 import Register from "./pages/Register.jsx"
+import SelectUsage from "./pages/SelectUsage.jsx"
 import ProtectedRoute from "./components/auth/ProtectedRoute.jsx"
 
 export default function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/seleccionar-uso" element={<SelectUsage />} />
       <Route path="/register" element={<Register />} />
       <Route
         path="/"
