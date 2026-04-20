@@ -107,3 +107,32 @@ export function isAuthenticated() {
   return Boolean(getToken())
 }
 
+export function getUserIdFromToken() {
+  const token = getToken()
+  if (!token) return null
+
+  try {
+    const parts = token.split(".")
+    if (parts.length < 2) return null
+    const payload = JSON.parse(decodeBase64Url(parts[1]))
+
+    const rawId =
+      payload?.nameid ??
+      payload?.[
+        "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"
+      ] ??
+      payload?.sub
+
+    const parsed = Number(rawId)
+    return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : null
+  } catch {
+    return null
+  }
+}
+
+function decodeBase64Url(value) {
+  const base64 = String(value).replace(/-/g, "+").replace(/_/g, "/")
+  const padded = `${base64}${"=".repeat((4 - (base64.length % 4)) % 4)}`
+  return atob(padded)
+}
+
