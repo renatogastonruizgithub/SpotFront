@@ -73,7 +73,7 @@ body {
 @keyframes spot-user-halo {
   0% {
     transform: scale(0.88);
-    opacity: 0.5;
+    opacity: 0.45;
   }
   70% {
     transform: scale(1.45);
@@ -87,8 +87,8 @@ body {
 
 .spot-user-marker {
   pointer-events: none;
-  width: 22px;
-  height: 22px;
+  width: 26px;
+  height: 26px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -96,15 +96,15 @@ body {
 
 .spot-user-marker__inner {
   position: relative;
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
 }
 
 .spot-user-marker__halo {
   position: absolute;
-  inset: -6px;
+  inset: -9px;
   border-radius: 9999px;
-  background: rgba(0, 209, 255, 0.22);
+  background: rgba(107, 114, 128, 0.26);
   animation: spot-user-halo 2.4s ease-out infinite;
 }
 
@@ -118,14 +118,19 @@ body {
 
 .spot-user-marker__dot {
   position: relative;
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
   border-radius: 9999px;
-  background: #00d1ff;
-  border: 3px solid #fff;
+  background: #334155;
+  border: 2.5px solid #fff;
   box-shadow:
-    0 2px 8px rgba(0, 0, 0, 0.35),
+    0 3px 10px rgba(0, 0, 0, 0.35),
+    0 0 0 6px rgba(51, 65, 85, 0.14),
     0 0 0 1px rgba(0, 0, 0, 0.12);
+}
+
+.spot-profile-sheet {
+  animation: spot-sheet-in 200ms ease-out both;
 }
 
 /* Bottom sheet: animación de subida suave */

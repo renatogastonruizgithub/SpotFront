@@ -34,8 +34,16 @@ export default function MapControls({ userPosition, detailCardOpen = false }) {
     >
       <NavigationControl position="bottom-right" showCompass={true} />
       <button
+        type="button"
         onClick={centerUser}
-        className="rounded-xl bg-[#00D1FF] p-2 text-white shadow-md shadow-[#00D1FF]/25 transition-colors hover:bg-[#33d9ff]"
+        className={cn(
+          "rounded-xl border border-white/25 bg-[#141820] p-2 text-slate-200 shadow-[0_8px_18px_rgba(0,0,0,0.28)]",
+          "transition-all duration-200 hover:scale-[1.02] hover:bg-[#1a202a] hover:text-white hover:shadow-[0_10px_22px_rgba(0,0,0,0.35)]",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/70",
+          "disabled:cursor-not-allowed disabled:opacity-55 disabled:hover:scale-100"
+        )}
+        aria-label="Centrar en mi ubicacion"
+        disabled={!userPosition}
       >
         <Crosshair size={20} />
       </button>
