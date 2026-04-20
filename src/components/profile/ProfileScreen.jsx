@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { getStoredEmail, getUserIdFromToken, logout } from "@/services/authService"
+import { ArrowLeft, LogOut, Pencil, Shield } from "lucide-react"
+import { getStoredEmail, getUserIdFromToken, getRoleFromToken } from "@/services/authService"
 import {
   getPerfilUsuario,
   actualizarPerfilUsuario,
@@ -22,7 +23,18 @@ function formatFecha(value) {
   }
 }
 
-function getRoleMeta(perfil) {
+function getRoleMeta(perfil, tokenRole) {
+  const tokenRoleNormalized = String(tokenRole ?? "").trim().toUpperCase()
+  if (tokenRoleNormalized === "CLIENTE") {
+    return { id: 2, label: "Cliente" }
+  }
+  if (tokenRoleNormalized === "PROPIETARIO") {
+    return { id: 3, label: "Propietario" }
+  }
+  if (tokenRoleNormalized === "ADMIN") {
+    return { id: 1, label: "Admin" }
+  }
+
   const roleObj =
     typeof perfil?.rol === "object" && perfil?.rol !== null ? perfil.rol : null
   const idRol = Number(
@@ -51,6 +63,7 @@ function getRoleMeta(perfil) {
 
 export default function ProfileScreen({ onBack, onSessionExpired }) {
   const [loading, setLoading] = useState(true)
+  const [isEditing, setIsEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [changingPass, setChangingPass] = useState(false)
@@ -65,6 +78,7 @@ export default function ProfileScreen({ onBack, onSessionExpired }) {
   })
 
   const userId = useMemo(() => getUserIdFromToken(), [])
+  const tokenRole = useMemo(() => getRoleFromToken(), [])
 
   useEffect(() => {
     if (!userId) {
@@ -101,6 +115,14 @@ export default function ProfileScreen({ onBack, onSessionExpired }) {
       cancelled = true
     }
   }, [onSessionExpired, userId])
+
+  useEffect(() => {
+    if (!message) return undefined
+    const timer = setTimeout(() => {
+      setMessage("")
+    }, 3000)
+    return () => clearTimeout(timer)
+  }, [message])
 
   async function handleGuardarPerfil(e) {
     e.preventDefault()
@@ -176,6 +198,85 @@ export default function ProfileScreen({ onBack, onSessionExpired }) {
     }
   }
 
+  async function handleGuardarCambios() {
+    if (!isEditing) {
+      setError("")
+      setMessage("")
+      setIsEditing(true)
+      return
+    }
+
+    setError("")
+    setMessage("")
+
+    const hasPasswordInput =
+      Boolean(passForm.passwordActual) ||
+      Boolean(passForm.passwordNueva) ||
+      Boolean(passForm.confirmarPassword)
+
+    if (hasPasswordInput) {
+      if (!passForm.passwordActual || !passForm.passwordNueva || !passForm.confirmarPassword) {
+        setError("Para seguridad, completa todos los campos de contrasena.")
+        return
+      }
+      if (passForm.passwordNueva !== passForm.confirmarPassword) {
+        setError("La nueva contrasena y su confirmacion no coinciden.")
+        return
+      }
+    }
+
+    const success = []
+
+    setSaving(true)
+    try {
+      const payload = {
+        nombre: form.nombre.trim(),
+        apellido: form.apellido.trim(),
+        telefono: form.telefono.trim(),
+      }
+      await actualizarPerfilUsuario(userId, payload)
+      const refreshed = await getPerfilUsuario(userId)
+      setPerfil(refreshed)
+      success.push("Perfil actualizado.")
+    } catch (err) {
+      if (err?.status === 401 || err?.status === 403) {
+        onSessionExpired?.()
+        return
+      }
+      setError(err instanceof Error ? err.message : "No se pudo actualizar el perfil")
+      return
+    } finally {
+      setSaving(false)
+    }
+
+    if (hasPasswordInput) {
+      setChangingPass(true)
+      try {
+        await cambiarPassword(passForm)
+        setPassForm({
+          passwordActual: "",
+          passwordNueva: "",
+          confirmarPassword: "",
+        })
+        success.push("Contrasena actualizada.")
+      } catch (err) {
+        if (err?.status === 401 || err?.status === 403) {
+          onSessionExpired?.()
+          return
+        }
+        setError(err instanceof Error ? err.message : "No se pudo cambiar la contrasena")
+        return
+      } finally {
+        setChangingPass(false)
+      }
+    }
+
+    if (success.length > 0) {
+      setMessage(success.join(" "))
+      setIsEditing(false)
+    }
+  }
+
   const avatarUrl =
     perfil?.imagen ??
     perfil?.avatar ??
@@ -183,7 +284,7 @@ export default function ProfileScreen({ onBack, onSessionExpired }) {
     perfil?.imagen_url ??
     null
   const fullName = [perfil?.nombre, perfil?.apellido].filter(Boolean).join(" ").trim()
-  const roleMeta = getRoleMeta(perfil)
+  const roleMeta = getRoleMeta(perfil, tokenRole)
   const rolTipo = roleMeta.label
   const fechaRegistro = perfil?.fecha_registro ?? perfil?.fechaRegistro ?? null
   const suspendidoValue = perfil?.suspendido
@@ -192,205 +293,222 @@ export default function ProfileScreen({ onBack, onSessionExpired }) {
 
   if (loading) {
     return (
-      <section className="absolute inset-0 z-[1001] flex items-center justify-center bg-[#0f1115] text-slate-200">
+      <section className="absolute inset-0 z-[1001] flex items-center justify-center bg-[#f2f3f8] text-[#34415f]">
         Cargando perfil...
       </section>
     )
   }
 
   return (
-    <section className="absolute inset-0 z-[1001] overflow-y-auto bg-[#0f1115] text-slate-100">
-      <div className="mx-auto flex min-h-full w-full max-w-2xl flex-col gap-4 px-4 pt-5 pb-8">
-        <header className="rounded-3xl border border-white/10 bg-[#13161c] p-5 shadow-[0_8px_30px_rgba(0,0,0,0.25)]">
-          <div className="flex items-center gap-4">
-            <div className="h-20 w-20 overflow-hidden rounded-full border-2 border-white/20 bg-slate-800 ring-2 ring-white/10">
-              {avatarUrl ? (
-                <img src={avatarUrl} alt="Avatar" className="h-full w-full object-cover" />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center text-2xl font-semibold text-slate-300">
-                  {(fullName || getStoredEmail() || "U").charAt(0).toUpperCase()}
-                </div>
-              )}
-            </div>
-            <div className="min-w-0">
-              <h1 className="truncate text-xl font-semibold tracking-tight">
-                {fullName || "Perfil"}
-              </h1>
-              <p className="mt-0.5 text-sm text-slate-400">
-                {perfil?.email ?? getStoredEmail() ?? "Sin email"}
-              </p>
-              <span className="mt-2 inline-flex rounded-full border border-white/15 bg-white/[0.04] px-2.5 py-1 text-xs font-medium text-slate-200">
-                Rol: {rolTipo}
-              </span>
-            </div>
+    <section className="absolute inset-0 z-[1001] overflow-y-auto bg-[#f2f3f8] text-[#23314f]">
+      <div className="mx-auto flex min-h-full w-full max-w-md flex-col px-4 pb-8">
+        <header className="sticky top-0 z-10 -mx-4 mb-4 border-b border-[#e5e8f1] bg-[#f2f3f8]/95 px-4 py-3 backdrop-blur-sm">
+          <div className="grid grid-cols-[1fr_auto_1fr] items-center">
+            <button
+              type="button"
+              onClick={onBack}
+              className="inline-flex items-center gap-1.5 text-sm text-[#5a6784]"
+            >
+              <ArrowLeft size={16} />
+              Volver al mapa
+            </button>
+            <h1 className="text-center text-lg font-semibold text-[#23314f]">Profile</h1>
+            <div />
           </div>
         </header>
 
         {error ? (
-          <p className="rounded-xl border border-red-300/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">
+          <p className="mb-3 rounded-xl border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">
             {error}
           </p>
         ) : null}
         {message ? (
-          <p className="rounded-xl border border-emerald-300/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-200">
+          <p className="mb-3 rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
             {message}
           </p>
         ) : null}
 
-        <section className="rounded-3xl border border-white/10 bg-[#13161c] p-4">
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-300">
-            Datos de cuenta
+        <section className="mb-6 flex flex-col items-center">
+          <div className="relative flex w-full justify-center">
+            <div className="relative h-24 w-24 overflow-visible">
+              <div className="h-full w-full overflow-hidden rounded-full border-2 border-[#d2d8ea] bg-[#dfe4f2] shadow-sm">
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="Avatar" className="h-full w-full object-cover" />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center text-3xl font-semibold text-[#5d6882]">
+                    {(fullName || getStoredEmail() || "U").charAt(0).toUpperCase()}
+                  </div>
+                )}
+              </div>
+              {isEditing ? (
+                <label className="absolute right-[-4px] bottom-[-4px] z-10 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border-2 border-white bg-[#4f5c78] text-white shadow-[0_4px_10px_rgba(0,0,0,0.25)] transition-transform hover:scale-105">
+                  <input
+                    type="file"
+                    accept=".jpg,.jpeg,.png"
+                    className="sr-only"
+                    onChange={handleCambiarImagen}
+                    disabled={uploading}
+                  />
+                  <span className="text-lg leading-none font-semibold" aria-hidden>
+                    {uploading ? "…" : "+"}
+                  </span>
+                  <span className="sr-only">
+                    {uploading ? "Subiendo imagen" : "Agregar imagen de perfil"}
+                  </span>
+                </label>
+              ) : null}
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={handleGuardarCambios}
+            disabled={saving || changingPass}
+            className="mt-2 inline-flex h-7 items-center gap-1 rounded-full border border-[#cdd3e4] bg-white px-2.5 text-[11px] font-semibold text-[#4f5c78] shadow-sm hover:bg-[#f8f9fe] disabled:opacity-60"
+          >
+            <Pencil size={11} />
+            {saving || changingPass ? "Guardando..." : isEditing ? "Guardar cambios" : "Editar perfil"}
+          </button>
+          <h2 className="mt-4 text-[44px] leading-none font-bold tracking-tight text-[#233a67]">
+            {fullName || "Perfil"}
           </h2>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <p className="mt-2 text-sm text-[#7f89a4]">{perfil?.email ?? getStoredEmail() ?? "-"}</p>
+        </section>
+
+        <section className="mb-5">
+          <h3 className="mb-3 text-xs font-semibold tracking-[0.16em] text-[#606c89] uppercase">
+            Datos de cuenta
+          </h3>
+          <div className="grid grid-cols-1 gap-3 rounded-2xl bg-[#eceef7] p-4">
             <ReadOnlyField label="Email" value={perfil?.email ?? getStoredEmail() ?? "-"} />
-            <ReadOnlyField label="Rol" value={rolTipo} />
-            <ReadOnlyField label="Fecha registro" value={formatFecha(fechaRegistro)} />
-            <ReadOnlyField label="Suspendido" value={suspendidoLabel} />
+            <ReadOnlyField label="Tipo de rol" value={rolTipo} />
+            <ReadOnlyField label="Registro" value={formatFecha(fechaRegistro)} />
+            <ReadOnlyField
+              label="Estado"
+              value={suspendidoLabel === "No" ? "Activo" : suspendidoLabel}
+              withStatus={suspendidoLabel === "No"}
+            />
           </div>
         </section>
 
-        <form onSubmit={handleGuardarPerfil} className="rounded-3xl border border-white/10 bg-[#13161c] p-4">
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-300">
+        <form onSubmit={handleGuardarPerfil} className="mb-6">
+          <h3 className="mb-1 text-xs font-semibold tracking-[0.16em] text-[#606c89] uppercase">
             Datos personales
-          </h2>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="space-y-1">
-              <label className="text-xs text-slate-400">Nombre</label>
+          </h3>
+          <p className="mb-3 text-xs text-[#7b86a1]">
+            {isEditing ? "Modo edicion activo: puedes modificar estos datos." : "Bloqueado: toca 'Editar perfil' para habilitar cambios."}
+          </p>
+          <div className="grid gap-4 rounded-2xl bg-[#eceef7] p-4">
+            <div className="space-y-2">
+              <label className="text-[11px] font-semibold tracking-wide text-[#5d6882] uppercase">Nombre</label>
               <Input
                 value={form.nombre}
                 onChange={(e) => setForm((prev) => ({ ...prev, nombre: e.target.value }))}
                 required
-                className="h-11 rounded-xl border-white/15 bg-white/[0.04] text-slate-100"
+                disabled={!isEditing}
+                className="h-12 rounded-xl border-[#e5e8f1] bg-[#eceef7] text-[#2d3b5a] shadow-none disabled:cursor-not-allowed disabled:opacity-70"
               />
             </div>
-            <div className="space-y-1">
-              <label className="text-xs text-slate-400">Apellido</label>
+            <div className="space-y-2">
+              <label className="text-[11px] font-semibold tracking-wide text-[#5d6882] uppercase">Apellido</label>
               <Input
                 value={form.apellido}
                 onChange={(e) => setForm((prev) => ({ ...prev, apellido: e.target.value }))}
                 required
-                className="h-11 rounded-xl border-white/15 bg-white/[0.04] text-slate-100"
+                disabled={!isEditing}
+                className="h-12 rounded-xl border-[#e5e8f1] bg-[#eceef7] text-[#2d3b5a] shadow-none disabled:cursor-not-allowed disabled:opacity-70"
               />
             </div>
-            <div className="space-y-1 sm:col-span-2">
-              <label className="text-xs text-slate-400">Telefono</label>
+            <div className="space-y-2">
+              <label className="text-[11px] font-semibold tracking-wide text-[#5d6882] uppercase">Telefono</label>
               <Input
                 value={form.telefono}
                 onChange={(e) => setForm((prev) => ({ ...prev, telefono: e.target.value }))}
-                className="h-11 rounded-xl border-white/15 bg-white/[0.04] text-slate-100"
+                disabled={!isEditing}
+                className="h-12 rounded-xl border-[#e5e8f1] bg-[#eceef7] text-[#2d3b5a] shadow-none disabled:cursor-not-allowed disabled:opacity-70"
               />
             </div>
           </div>
-          <Button
-            type="submit"
-            disabled={saving}
-            className="mt-4 h-11 w-full rounded-xl bg-slate-100 text-slate-900 hover:bg-white"
-          >
-            {saving ? "Guardando..." : "Guardar cambios"}
-          </Button>
         </form>
 
-        <section className="rounded-3xl border border-white/10 bg-[#13161c] p-4">
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-300">
-            Avatar
-          </h2>
-          <label className="inline-flex h-11 cursor-pointer items-center justify-center rounded-xl border border-white/15 bg-white/[0.04] px-4 text-sm font-medium text-slate-100 hover:bg-white/[0.08]">
-            {uploading ? "Subiendo..." : "Cambiar foto"}
-            <input
-              type="file"
-              accept=".jpg,.jpeg,.png"
-              className="sr-only"
-              onChange={handleCambiarImagen}
-              disabled={uploading}
-            />
-          </label>
-          <p className="mt-2 text-xs text-slate-500">Maximo 4MB, formatos .jpg, .jpeg, .png</p>
-        </section>
-
-        <form onSubmit={handleCambiarPassword} className="rounded-3xl border border-white/10 bg-[#13161c] p-4">
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-300">
+        <form onSubmit={handleCambiarPassword} className="mb-6">
+          <h3 className="mb-1 inline-flex items-center gap-2 text-xs font-semibold tracking-[0.16em] text-[#606c89] uppercase">
+            <Shield size={14} />
             Seguridad
-          </h2>
-          <div className="grid gap-3">
-            <div className="space-y-1">
-              <label className="text-xs text-slate-400">Contrasena actual</label>
+          </h3>
+          <p className="mb-3 text-xs text-[#7b86a1]">
+            {isEditing ? "Puedes cambiar la contrasena en este bloque." : "Bloqueado: habilita edicion para actualizar seguridad."}
+          </p>
+          <div className="grid gap-4 rounded-2xl bg-[#eceef7] p-4">
+            <div className="space-y-2">
+              <label className="text-[11px] font-semibold tracking-wide text-[#5d6882] uppercase">Contrasena actual</label>
               <Input
                 type="password"
                 value={passForm.passwordActual}
                 onChange={(e) =>
                   setPassForm((prev) => ({ ...prev, passwordActual: e.target.value }))
                 }
-                className="h-11 rounded-xl border-white/15 bg-white/[0.04] text-slate-100"
+                disabled={!isEditing}
+                className="h-12 rounded-xl border-[#e5e8f1] bg-[#eceef7] text-[#2d3b5a] shadow-none disabled:cursor-not-allowed disabled:opacity-70"
               />
             </div>
-            <div className="space-y-1">
-              <label className="text-xs text-slate-400">Nueva contrasena</label>
+            <div className="space-y-2">
+              <label className="text-[11px] font-semibold tracking-wide text-[#5d6882] uppercase">Nueva contrasena</label>
               <Input
                 type="password"
                 value={passForm.passwordNueva}
                 onChange={(e) =>
                   setPassForm((prev) => ({ ...prev, passwordNueva: e.target.value }))
                 }
-                className="h-11 rounded-xl border-white/15 bg-white/[0.04] text-slate-100"
+                disabled={!isEditing}
+                className="h-12 rounded-xl border-[#e5e8f1] bg-[#eceef7] text-[#2d3b5a] shadow-none disabled:cursor-not-allowed disabled:opacity-70"
+                placeholder="Min. 8 caracteres"
               />
             </div>
-            <div className="space-y-1">
-              <label className="text-xs text-slate-400">Confirmar nueva contrasena</label>
+            <div className="space-y-2">
+              <label className="text-[11px] font-semibold tracking-wide text-[#5d6882] uppercase">Confirmar contrasena</label>
               <Input
                 type="password"
                 value={passForm.confirmarPassword}
                 onChange={(e) =>
                   setPassForm((prev) => ({ ...prev, confirmarPassword: e.target.value }))
                 }
-                className="h-11 rounded-xl border-white/15 bg-white/[0.04] text-slate-100"
+                disabled={!isEditing}
+                className="h-12 rounded-xl border-[#e5e8f1] bg-[#eceef7] text-[#2d3b5a] shadow-none disabled:cursor-not-allowed disabled:opacity-70"
+                placeholder="Repite la contrasena"
               />
             </div>
           </div>
-          <Button
-            type="submit"
-            disabled={
-              changingPass ||
-              !passForm.passwordActual ||
-              !passForm.passwordNueva ||
-              !passForm.confirmarPassword
-            }
-            className="mt-4 h-11 w-full rounded-xl bg-white/[0.08] text-slate-100 hover:bg-white/[0.12]"
-          >
-            {changingPass ? "Actualizando..." : "Cambiar contrasena"}
-          </Button>
         </form>
 
-        <div className="mt-1 grid gap-2 sm:grid-cols-2">
-          <Button
+        <div className="mt-auto">
+          <button
             type="button"
-            variant="outline"
-            className="border-white/20 bg-transparent text-slate-200 hover:bg-white/[0.06]"
-            onClick={onBack}
+            className="mx-auto mb-4 inline-flex w-full items-center justify-center gap-2 text-[15px] font-semibold text-[#874d58]"
+            onClick={onSessionExpired}
           >
-            Cancelar / Volver
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            className="border-white/20 bg-transparent text-slate-200 hover:bg-white/[0.06]"
-            onClick={() => {
-              logout()
-              onSessionExpired?.()
-            }}
-          >
+            <LogOut size={16} />
             Cerrar sesion
-          </Button>
+          </button>
+          <p className="mt-3 text-center text-[12px] font-semibold tracking-[0.18em] text-[#7f89a4]">
+            SPOT
+          </p>
+          <p className="mt-3 text-center text-[11px] text-[#8892ab]">
+            Avatar: maximo 4MB, formatos .jpg, .jpeg, .png
+          </p>
         </div>
       </div>
     </section>
   )
 }
 
-function ReadOnlyField({ label, value }) {
+function ReadOnlyField({ label, value, withStatus = false }) {
   return (
-    <div className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
-      <p className="text-[11px] uppercase tracking-wide text-slate-500">{label}</p>
-      <p className="mt-1 text-sm text-slate-100">{value}</p>
+    <div className="rounded-lg bg-[#eceef7] px-2 py-1">
+      <p className="text-[10px] font-semibold tracking-wide text-[#68738f] uppercase">{label}</p>
+      <p className="mt-1 text-sm text-[#2f3b58]">
+        {withStatus ? <span className="mr-1 inline-block h-2 w-2 rounded-full bg-emerald-500" /> : null}
+        {value}
+      </p>
     </div>
   )
 }

@@ -108,23 +108,52 @@ export function isAuthenticated() {
 }
 
 export function getUserIdFromToken() {
+  const payload = getTokenPayload()
+  if (!payload) return null
+
+  const rawId =
+    payload?.[
+      "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"
+    ] ??
+    payload?.nameid ??
+    payload?.id_usuario ??
+    payload?.idUsuario ??
+    payload?.userId ??
+    payload?.sub
+
+  const parsed = Number(rawId)
+  return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : null
+}
+
+export function getRoleFromToken() {
+  const payload = getTokenPayload()
+  if (!payload) return null
+
+  const rawRole =
+    payload?.[
+      "http://schemas.microsoft.com/ws/2008/06/identity/claims/role"
+    ] ??
+    payload?.role ??
+    payload?.rol ??
+    payload?.rol_codigo ??
+    payload?.tipo
+
+  const normalized = String(rawRole ?? "").trim().toUpperCase()
+  if (!normalized) return null
+  if (normalized.includes("CLIENTE")) return "CLIENTE"
+  if (normalized.includes("PROPIETARIO")) return "PROPIETARIO"
+  if (normalized.includes("ADMIN")) return "ADMIN"
+  return normalized
+}
+
+function getTokenPayload() {
   const token = getToken()
   if (!token) return null
 
   try {
     const parts = token.split(".")
     if (parts.length < 2) return null
-    const payload = JSON.parse(decodeBase64Url(parts[1]))
-
-    const rawId =
-      payload?.nameid ??
-      payload?.[
-        "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"
-      ] ??
-      payload?.sub
-
-    const parsed = Number(rawId)
-    return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : null
+    return JSON.parse(decodeBase64Url(parts[1]))
   } catch {
     return null
   }
