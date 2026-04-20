@@ -1,6 +1,7 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
+import { fetchRoles } from "@/services/usuariosService"
 import {
   Card,
   CardContent,
@@ -12,11 +13,15 @@ import {
 function getRoleIds() {
   const cliente = Number(import.meta.env.VITE_REGISTRO_ID_ROL_CLIENTE)
   const propietario = Number(import.meta.env.VITE_REGISTRO_ID_ROL_PROPIETARIO)
+  const clienteSafe =
+    Number.isFinite(cliente) && cliente > 0 ? Math.floor(cliente) : 2
+  const propietarioSafe =
+    Number.isFinite(propietario) && propietario > 0 ? Math.floor(propietario) : 3
 
   return {
-    cliente: Number.isFinite(cliente) && cliente > 0 ? Math.floor(cliente) : 1,
+    cliente: clienteSafe === 2 || clienteSafe === 3 ? clienteSafe : 2,
     propietario:
-      Number.isFinite(propietario) && propietario > 0 ? Math.floor(propietario) : 2,
+      propietarioSafe === 2 || propietarioSafe === 3 ? propietarioSafe : 3,
   }
 }
 
@@ -24,20 +29,55 @@ export default function SelectUsage() {
   const navigate = useNavigate()
   const [selectedOption, setSelectedOption] = useState("")
   const roleIds = useMemo(() => getRoleIds(), [])
+  const [rolesPublicos, setRolesPublicos] = useState([])
+  const [errorRoles, setErrorRoles] = useState("")
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadRoles() {
+      setErrorRoles("")
+      try {
+        const roles = await fetchRoles()
+        if (!cancelled) {
+          setRolesPublicos(Array.isArray(roles) ? roles : [])
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setRolesPublicos([])
+          setErrorRoles(err instanceof Error ? err.message : "No se pudieron cargar los roles")
+        }
+      }
+    }
+
+    loadRoles()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const roleCliente =
+    rolesPublicos.find((role) => String(role?.codigo ?? "").toUpperCase() === "CLIENTE") ??
+    null
+  const rolePropietario =
+    rolesPublicos.find((role) => String(role?.codigo ?? "").toUpperCase() === "PROPIETARIO") ??
+    null
+  const roleClienteId = Number(roleCliente?.id_rol)
+  const rolePropietarioId = Number(rolePropietario?.id_rol)
 
   const options = [
     {
       id: "explorar",
       title: "Explorar bares y lugares",
       description: "Descubre bares, promociones y eventos cerca de ti.",
-      roleId: roleIds.cliente,
+      roleId: roleClienteId === 2 ? 2 : roleIds.cliente,
       roleName: "cliente",
     },
     {
       id: "publicar",
       title: "Publicar mi bar o negocio",
       description: "Administra tu bar, publica promociones y llega a más clientes.",
-      roleId: roleIds.propietario,
+      roleId: rolePropietarioId === 3 ? 3 : roleIds.propietario,
       roleName: "propietario",
     },
   ]
@@ -66,6 +106,11 @@ export default function SelectUsage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
+          {errorRoles ? (
+            <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+              {errorRoles}. Se usarán valores de respaldo para continuar.
+            </p>
+          ) : null}
           {options.map((option) => {
             const isSelected = selectedOption === option.id
             return (

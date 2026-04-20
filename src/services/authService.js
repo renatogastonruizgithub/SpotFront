@@ -1,4 +1,5 @@
 import { apiUrl } from "@/lib/apiUrl"
+import { buildApiError } from "@/lib/apiError"
 
 const TOKEN_KEY = "spot_auth_token"
 const EMAIL_KEY = "spot_auth_email"
@@ -16,8 +17,7 @@ export async function login(email, contraseña) {
   })
 
   if (!res.ok) {
-    const msg = await readErrorBody(res)
-    throw new Error(msg || `Error ${res.status}`)
+    throw await buildApiError(res)
   }
 
   const data = await res.json()
@@ -48,8 +48,7 @@ export async function reenviarActivacion(email) {
   })
 
   if (!res.ok) {
-    const msg = await readErrorBody(res)
-    throw new Error(msg || `Error ${res.status}`)
+    throw await buildApiError(res)
   }
 
   const ct = res.headers.get("content-type") ?? ""
@@ -108,19 +107,3 @@ export function isAuthenticated() {
   return Boolean(getToken())
 }
 
-async function readErrorBody(res) {
-  const ct = res.headers.get("content-type") ?? ""
-  if (ct.includes("application/json")) {
-    try {
-      const j = await res.json()
-      return j.message ?? j.Message ?? j.mensaje ?? j.error ?? JSON.stringify(j)
-    } catch {
-      /* fall through */
-    }
-  }
-  try {
-    return (await res.text()).trim() || null
-  } catch {
-    return res.statusText
-  }
-}

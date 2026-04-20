@@ -1,25 +1,24 @@
 import { apiUrl } from "@/lib/apiUrl"
+import { buildApiError } from "@/lib/apiError"
 
 /**
- * POST attribute routing en el API: `Auth/registrarUsuarios`
- * Body: { email, contraseña, id_rol }. Respuesta 201.
- * Sobrescribir con `VITE_API_REGISTRO_PATH` si cambia el contrato.
+ * Contrato backend definitivo:
+ * POST /Auth/registrarUsuarios
+ * Body: { email, contraseña, id_rol }
  */
-const REGISTRO_PATH =
-  String(import.meta.env.VITE_API_REGISTRO_PATH ?? "").trim() ||
-  "/Auth/registrarUsuarios"
+const REGISTRO_PATH = "/Auth/registrarUsuarios"
 
 /** Listado de roles (público en dev; si el API exige JWT, iniciá sesión antes). */
 export async function fetchRoles() {
-  const res = await fetch(apiUrl("/api/roles"), {
+  const res = await fetch(apiUrl("/api/roles/public"), {
     method: "GET",
     headers: { Accept: "application/json" },
   })
   if (!res.ok) {
-    const text = await res.text()
-    throw new Error(text.trim() || `Error ${res.status}`)
+    throw await buildApiError(res)
   }
-  return res.json()
+  const data = await res.json()
+  return Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : []
 }
 
 /**
@@ -40,15 +39,7 @@ export async function registrarUsuario(body, idRol) {
     body: JSON.stringify(payload),
   })
   if (!res.ok) {
-    const text = await res.text()
-    let msg = text.trim()
-    try {
-      const j = JSON.parse(text)
-      msg = j.Message ?? j.message ?? j.mensaje ?? msg
-    } catch {
-      /* texto plano */
-    }
-    throw new Error(msg || `Error ${res.status}`)
+    throw await buildApiError(res)
   }
   const ct = res.headers.get("content-type") ?? ""
   if (ct.includes("application/json")) {

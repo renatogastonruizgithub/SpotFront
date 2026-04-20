@@ -53,8 +53,13 @@ export default function Login() {
     } catch (err) {
       const msg = err instanceof Error ? err.message : "No se pudo iniciar sesión"
       setError(msg)
+      const code = err instanceof Error ? String(err.code ?? "") : ""
       const lowerMsg = msg.toLowerCase()
-      if (lowerMsg.includes("activar") || lowerMsg.includes("activada")) {
+      if (
+        code.toUpperCase().includes("ACTIV") ||
+        lowerMsg.includes("activar") ||
+        lowerMsg.includes("activada")
+      ) {
         setMostrarReenvio(true)
       }
     } finally {

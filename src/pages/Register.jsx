@@ -17,12 +17,28 @@ const fieldClass =
 
 function idRolDesdeEnv() {
   const n = Number(import.meta.env.VITE_REGISTRO_ID_ROL)
-  return Number.isFinite(n) && n > 0 ? Math.floor(n) : 1
+  const normalized = Number.isFinite(n) && n > 0 ? Math.floor(n) : 2
+  return normalized === 2 || normalized === 3 ? normalized : 2
 }
 
 function parseRoleId(value) {
   const n = Number(value)
-  return Number.isFinite(n) && n > 0 ? Math.floor(n) : null
+  if (!Number.isFinite(n) || n <= 0) return null
+  const normalized = Math.floor(n)
+  return normalized === 2 || normalized === 3 ? normalized : null
+}
+
+function registrationMessageFromCode(code, fallback) {
+  switch (code) {
+    case "EMAIL_ALREADY_EXISTS":
+      return "Ese correo ya está registrado. Probá iniciar sesión o recuperar acceso."
+    case "ROLE_NOT_FOUND":
+      return "El rol seleccionado no existe. Volvé a elegir cómo querés usar Spot."
+    case "REGISTRATION_ROLE_NOT_ALLOWED":
+      return "Ese rol no está habilitado para registro público."
+    default:
+      return fallback
+  }
 }
 
 export default function Register() {
@@ -66,7 +82,11 @@ export default function Register() {
         },
       })
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo registrar")
+      if (err instanceof Error) {
+        setError(registrationMessageFromCode(err.code, err.message))
+      } else {
+        setError("No se pudo registrar")
+      }
     } finally {
       setLoading(false)
     }
@@ -90,7 +110,7 @@ export default function Register() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            {/* Solo envío semántico: el id_rol real va en la URL en `registrarUsuario` */}
+            {/* Solo envío semántico: el id_rol real se envía en el body JSON */}
             <input type="hidden" name="id_rol" value={idRolRegistro} readOnly />
 
             <div className="space-y-2">
