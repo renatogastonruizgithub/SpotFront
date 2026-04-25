@@ -166,6 +166,16 @@ export default function Login() {
                   ? "Podés ver lo que escribís. Tocá el ícono para ocultarla."
                   : "Los puntos indican cada letra. Tocá el ojo si querés ver la contraseña."}
               </p>
+              {/* Acción rápida para recuperar contraseña si no recuerda el acceso. */}
+              <p className="pt-1">
+                <Link
+                  to="/recuperar-contraseña"
+                  state={{ email }}
+                  className="text-sm font-medium text-cyan-700 underline-offset-2 hover:underline"
+                >
+                  ¿Olvidaste tu contraseña? Restablecer
+                </Link>
+              </p>
             </div>
             {error ? (
               <p className="text-sm font-medium text-red-600" role="alert">

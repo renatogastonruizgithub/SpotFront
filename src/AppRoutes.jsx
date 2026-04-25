@@ -3,12 +3,14 @@ import App from "./App.jsx"
 import Login from "./pages/Login.jsx"
 import Register from "./pages/Register.jsx"
 import SelectUsage from "./pages/SelectUsage.jsx"
+import RecoverPassword from "./pages/RecoverPassword.jsx"
 import ProtectedRoute from "./components/auth/ProtectedRoute.jsx"
 
 export default function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/recuperar-contraseña" element={<RecoverPassword />} />
       <Route path="/seleccionar-uso" element={<SelectUsage />} />
       <Route path="/register" element={<Register />} />
       <Route

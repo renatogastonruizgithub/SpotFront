@@ -69,6 +69,41 @@ export async function reenviarActivacion(email) {
   }
 }
 
+/**
+ * // Solicita correo de recuperación de contraseña para el email ingresado.
+ * // Si el backend usa otra ruta, ajustar aquí sin tocar la UI.
+ * @param {string} email
+ * @returns {Promise<string>}
+ */
+export async function solicitarRecuperacionPassword(email) {
+  const res = await fetch(apiUrl("/Auth/solicitar-recuperacion-contrasena"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  })
+
+  if (!res.ok) {
+    throw await buildApiError(res)
+  }
+
+  const ct = res.headers.get("content-type") ?? ""
+  if (ct.includes("application/json")) {
+    try {
+      const data = await res.json()
+      return data.message ?? data.Message ?? data.mensaje ?? "Revisá tu correo."
+    } catch {
+      return "Revisá tu correo."
+    }
+  }
+
+  try {
+    const text = (await res.text()).trim()
+    return text || "Revisá tu correo."
+  } catch {
+    return "Revisá tu correo."
+  }
+}
+
 export function logout() {
   try {
     localStorage.removeItem(TOKEN_KEY)
