@@ -1,7 +1,13 @@
 import { useEffect, useMemo, useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { Navigate, useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { fetchRoles } from "@/services/usuariosService"
+import {
+  getHomeRouteByRole,
+  getOnboardingChoice,
+  isAuthenticated,
+  setOnboardingChoice,
+} from "@/services/authService"
 import { Compass, Sparkles, Store } from "lucide-react"
 import {
   Card,
@@ -91,12 +97,26 @@ export default function SelectUsage() {
 
   function handleContinue() {
     if (!selectedRole) return
-    navigate("/register", {
-      state: {
-        roleId: selectedRole.roleId,
-        roleName: selectedRole.roleName,
-      },
-    })
+    // Guardamos onboarding por usuario para no volver a preguntar en futuros logins.
+    setOnboardingChoice(selectedRole.roleName)
+
+    // Redirección pedida tras elegir uso.
+    if (selectedRole.roleName === "propietario") {
+      navigate("/owner/dashboard", { replace: true })
+      return
+    }
+    navigate("/", { replace: true })
+  }
+
+  // Seguridad extra: no autenticado nunca ve esta pantalla.
+  if (!isAuthenticated()) {
+    return <Navigate to="/login" replace />
+  }
+
+  // Si ya eligió uso en otra sesión, evitamos mostrar la pantalla de nuevo.
+  const onboardingChoice = getOnboardingChoice()
+  if (onboardingChoice) {
+    return <Navigate to={getHomeRouteByRole()} replace />
   }
 
   return (

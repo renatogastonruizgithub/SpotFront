@@ -3,6 +3,7 @@ import { buildApiError } from "@/lib/apiError"
 
 const TOKEN_KEY = "spot_auth_token"
 const EMAIL_KEY = "spot_auth_email"
+const ONBOARDING_PREFIX = "onboardingChoice:"
 
 /**
  * @param {string} email
@@ -179,6 +180,79 @@ export function getRoleFromToken() {
   if (normalized.includes("PROPIETARIO")) return "PROPIETARIO"
   if (normalized.includes("ADMIN")) return "ADMIN"
   return normalized
+}
+
+// Obtiene un identificador estable del usuario desde el token (id o email).
+function getUserIdentityFromToken() {
+  const payload = getTokenPayload()
+  if (!payload) return null
+
+  const userId =
+    payload?.[
+      "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"
+    ] ??
+    payload?.nameid ??
+    payload?.id_usuario ??
+    payload?.idUsuario ??
+    payload?.userId ??
+    payload?.sub
+
+  const parsedId = Number(userId)
+  if (Number.isFinite(parsedId) && parsedId > 0) return `id:${Math.floor(parsedId)}`
+
+  const rawEmail =
+    payload?.email ??
+    payload?.upn ??
+    payload?.unique_name ??
+    payload?.[
+      "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress"
+    ] ??
+    getStoredEmail()
+
+  const email = String(rawEmail ?? "").trim().toLowerCase()
+  if (email) return `email:${email}`
+  return null
+}
+
+// Clave por usuario para no mezclar onboarding entre cuentas distintas.
+function getOnboardingStorageKey() {
+  const identity = getUserIdentityFromToken()
+  return identity ? `${ONBOARDING_PREFIX}${identity}` : null
+}
+
+// Lee elección previa de onboarding del usuario autenticado.
+export function getOnboardingChoice() {
+  const key = getOnboardingStorageKey()
+  if (!key) return null
+  try {
+    const value = localStorage.getItem(key)
+    if (!value) return null
+    const normalized = String(value).trim().toLowerCase()
+    return normalized === "cliente" || normalized === "propietario" ? normalized : null
+  } catch {
+    return null
+  }
+}
+
+// Guarda elección de onboarding para el usuario autenticado actual.
+export function setOnboardingChoice(choice) {
+  const key = getOnboardingStorageKey()
+  if (!key) return
+  const normalized = String(choice ?? "").trim().toLowerCase()
+  if (normalized !== "cliente" && normalized !== "propietario") return
+  try {
+    localStorage.setItem(key, normalized)
+  } catch {
+    /* ignore */
+  }
+}
+
+// Resuelve ruta base por rol del token.
+export function getHomeRouteByRole() {
+  const role = getRoleFromToken()
+  if (role === "PROPIETARIO") return "/owner/dashboard"
+  if (role === "ADMIN") return "/admin"
+  return "/"
 }
 
 function getTokenPayload() {

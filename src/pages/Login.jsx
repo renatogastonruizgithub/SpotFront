@@ -1,6 +1,11 @@
 import { useState } from "react"
 import { Link, useNavigate, useLocation } from "react-router-dom"
-import { login, reenviarActivacion } from "@/services/authService"
+import {
+  getHomeRouteByRole,
+  getOnboardingChoice,
+  login,
+  reenviarActivacion,
+} from "@/services/authService"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -48,9 +53,23 @@ export default function Login() {
     setErrorReenvio("")
     setLoading(true)
     try {
+      // 1) Autentica únicamente con POST /Auth/login.
       await login(email.trim(), contraseña)
-      navigate(from, { replace: true })
+
+      // 2) Si no tiene onboarding elegido, va a seleccionar uso.
+      const onboardingChoice = getOnboardingChoice()
+      if (!onboardingChoice) {
+        navigate("/seleccionar-uso", { replace: true })
+        return
+      }
+
+      // 3) Si ya eligió, va directo al home según rol.
+      const roleHome = getHomeRouteByRole()
+      const targetPath =
+        from && from !== "/login" && from !== "/seleccionar-uso" ? from : roleHome
+      navigate(targetPath, { replace: true })
     } catch (err) {
+      // Mostramos exactamente el mensaje backend en 400 (sin texto genérico).
       const msg = err instanceof Error ? err.message : "No se pudo iniciar sesión"
       setError(msg)
       const code = err instanceof Error ? String(err.code ?? "") : ""

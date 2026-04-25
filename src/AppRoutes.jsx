@@ -11,7 +11,14 @@ export default function AppRoutes() {
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/recuperar-contraseña" element={<RecoverPassword />} />
-      <Route path="/seleccionar-uso" element={<SelectUsage />} />
+      <Route
+        path="/seleccionar-uso"
+        element={
+          <ProtectedRoute>
+            <SelectUsage />
+          </ProtectedRoute>
+        }
+      />
       <Route path="/register" element={<Register />} />
       <Route
         path="/"
