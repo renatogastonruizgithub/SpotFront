@@ -34,6 +34,8 @@ function getRoleIds() {
 
 export default function SelectUsage() {
   const navigate = useNavigate()
+  // Detecta si la pantalla se usa como onboarding post-login o como selección para registro.
+  const authenticated = isAuthenticated()
   const [selectedOption, setSelectedOption] = useState("")
   const roleIds = useMemo(() => getRoleIds(), [])
   const [rolesPublicos, setRolesPublicos] = useState([])
@@ -97,25 +99,29 @@ export default function SelectUsage() {
 
   function handleContinue() {
     if (!selectedRole) return
-    // Guardamos onboarding por usuario para no volver a preguntar en futuros logins.
-    setOnboardingChoice(selectedRole.roleName)
-
-    // Redirección pedida tras elegir uso.
-    if (selectedRole.roleName === "propietario") {
-      navigate("/owner/dashboard", { replace: true })
+    if (authenticated) {
+      // Modo onboarding (usuario logueado): guardamos elección única por usuario.
+      setOnboardingChoice(selectedRole.roleName)
+      if (selectedRole.roleName === "propietario") {
+        navigate("/owner/dashboard", { replace: true })
+        return
+      }
+      navigate("/", { replace: true })
       return
     }
-    navigate("/", { replace: true })
+
+    // Modo registro (usuario no logueado): se elige rol y se continúa al formulario de alta.
+    navigate("/register", {
+      state: {
+        roleId: selectedRole.roleId,
+        roleName: selectedRole.roleName,
+      },
+    })
   }
 
-  // Seguridad extra: no autenticado nunca ve esta pantalla.
-  if (!isAuthenticated()) {
-    return <Navigate to="/login" replace />
-  }
-
-  // Si ya eligió uso en otra sesión, evitamos mostrar la pantalla de nuevo.
-  const onboardingChoice = getOnboardingChoice()
-  if (onboardingChoice) {
+  // Si viene logueado y ya eligió uso antes, no mostramos onboarding otra vez.
+  const onboardingChoice = authenticated ? getOnboardingChoice() : null
+  if (authenticated && onboardingChoice) {
     return <Navigate to={getHomeRouteByRole()} replace />
   }
 
