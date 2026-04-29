@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input"
 import { Eye, EyeOff } from "lucide-react"
 
 const fieldClass =
-  "h-11 rounded-[10px] border border-[#22304f] bg-[#0b1730] text-sm text-white caret-white placeholder:text-[#51607f] shadow-none focus-visible:border-[#5a57ff] focus-visible:ring-2 focus-visible:ring-[#5a57ff]/25 dark:border-[#22304f] dark:bg-[#0b1730] dark:text-white dark:placeholder:text-[#51607f]"
+  "h-11 rounded-[10px] border border-[#22304f] bg-[#0b1730] text-sm text-white caret-white shadow-none focus-visible:border-[#5a57ff] focus-visible:ring-2 focus-visible:ring-[#5a57ff]/25 dark:border-[#22304f] dark:bg-[#0b1730] dark:text-white"
 
 export default function Login() {
   const navigate = useNavigate()
@@ -161,7 +161,6 @@ export default function Login() {
                   name="email"
                   type="email"
                   autoComplete="email"
-                  placeholder="admin@spot.com"
                   value={email}
                   onChange={(e) => manejarCambioEmail(e.target.value)}
                   required
@@ -178,12 +177,10 @@ export default function Login() {
                     name="contraseña"
                     type={mostrarContraseña ? "text" : "password"}
                     autoComplete="current-password"
-                    placeholder="••••••••"
                     value={contraseña}
                     onChange={(e) => setContraseña(e.target.value)}
                     required
                     className={`${fieldClass} pr-11`}
-                    aria-describedby="hint-contraseña"
                   />
                   <button
                     type="button"
@@ -203,11 +200,6 @@ export default function Login() {
                     )}
                   </button>
                 </div>
-                <p id="hint-contraseña" className="text-xs text-[#7f8eb0]">
-                  {mostrarContraseña
-                    ? "Podés ver lo que escribís. Tocá el ícono para ocultarla."
-                    : "Los puntos indican cada letra. Tocá el ojo si querés ver la contraseña."}
-                </p>
                 <p className="pt-1">
                   <Link
                     to="/recuperar-contraseña"
