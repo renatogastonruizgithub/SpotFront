@@ -2,8 +2,8 @@ import { useState } from "react"
 import { Link, useNavigate, useLocation } from "react-router-dom"
 import {
   getHomeRouteByRole,
-  getOnboardingChoice,
   login,
+  needsRoleAssignment,
   reenviarActivacion,
 } from "@/services/authService"
 import { Button } from "@/components/ui/button"
@@ -64,14 +64,13 @@ export default function Login() {
       // 1) Autentica únicamente con POST /Auth/login.
       await login(email.trim(), contraseña)
 
-      // 2) Si no tiene onboarding elegido, va a seleccionar uso.
-      const onboardingChoice = getOnboardingChoice()
-      if (!onboardingChoice) {
+      // 2) Rol `user`: debe elegir explorador o propietario (PATCH /Auth/asignar-rol).
+      if (needsRoleAssignment()) {
         navigate("/seleccionar-uso", { replace: true })
         return
       }
 
-      // 3) Si ya eligió, va directo al home según rol.
+      // 3) Si ya tiene rol en el JWT, va al home según rol (y deep link si aplica).
       const roleHome = getHomeRouteByRole()
       const targetPath =
         from && from !== "/login" && from !== "/seleccionar-uso" ? from : roleHome

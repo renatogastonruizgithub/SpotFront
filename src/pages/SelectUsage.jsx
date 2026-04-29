@@ -2,10 +2,13 @@ import { useState } from "react"
 import { Navigate, useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import {
+  asignarRol,
   getHomeRouteByRole,
-  getOnboardingChoice,
+  indicatesRoleAlreadyAssignedError,
   isAuthenticated,
+  needsRoleAssignment,
   setOnboardingChoice,
+  setRoleGateOverride,
 } from "@/services/authService"
 import { Compass, Sparkles, Store } from "lucide-react"
 import {
@@ -16,51 +19,76 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 
+function mensajeErrorAsignacion(err) {
+  const status = err && typeof err === "object" && "status" in err ? Number(err.status) : 0
+  const msg = err instanceof Error ? err.message : ""
+  if (status === 500 || status >= 500) {
+    return "Error del servidor. Intentá nuevamente en unos minutos."
+  }
+  if (status === 403) {
+    return msg || "No podés elegir ese perfil con este método."
+  }
+  if (status === 404) {
+    return msg || "No se encontró el usuario."
+  }
+  return msg || "No se pudo guardar tu perfil."
+}
+
 export default function SelectUsage() {
   const navigate = useNavigate()
   const authenticated = isAuthenticated()
+  const [selectedOption, setSelectedOption] = useState("")
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
+
   if (!authenticated) {
     return <Navigate to="/login" replace />
   }
 
-  const [selectedOption, setSelectedOption] = useState("")
+  if (!needsRoleAssignment()) {
+    return <Navigate to={getHomeRouteByRole()} replace />
+  }
 
   const options = [
     {
       id: "explorar",
       title: "Explorar bares y lugares",
-      description: "Descubre bares, promociones y eventos cerca de ti.",
+      description: "Descubrí bares, promociones y eventos cerca tuyo.",
       helper: "Ideal para salir y descubrir promos",
       icon: Compass,
-      roleName: "cliente",
+      nuevoRol: "explorador",
     },
     {
       id: "publicar",
       title: "Publicar mi bar o negocio",
-      description: "Administra tu bar, publica promociones y llega a más clientes.",
+      description: "Administrá tu bar, publicá promociones y llegá a más clientes.",
       helper: "Ideal para dueños y emprendedores",
       icon: Store,
-      roleName: "propietario",
+      nuevoRol: "propietario",
     },
   ]
 
-  const selectedRole = options.find((option) => option.id === selectedOption) ?? null
+  const selected = options.find((option) => option.id === selectedOption) ?? null
 
-  function handleContinue() {
-    if (!selectedRole) return
-
-    // Onboarding post-activación/login: se guarda solo una vez por usuario.
-    setOnboardingChoice(selectedRole.roleName)
-    if (selectedRole.roleName === "propietario") {
-      navigate("/owner/dashboard", { replace: true })
-      return
+  async function handleContinue() {
+    if (!selected || loading) return
+    setError("")
+    setLoading(true)
+    try {
+      await asignarRol(selected.nuevoRol)
+      setOnboardingChoice(selected.nuevoRol === "explorador" ? "cliente" : "propietario")
+      navigate(getHomeRouteByRole(), { replace: true })
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : ""
+      if (indicatesRoleAlreadyAssignedError(msg)) {
+        setRoleGateOverride()
+        navigate(getHomeRouteByRole(), { replace: true })
+        return
+      }
+      setError(mensajeErrorAsignacion(err))
+    } finally {
+      setLoading(false)
     }
-    navigate("/", { replace: true })
-  }
-
-  const onboardingChoice = getOnboardingChoice()
-  if (onboardingChoice) {
-    return <Navigate to={getHomeRouteByRole()} replace />
   }
 
   return (
@@ -72,10 +100,11 @@ export default function SelectUsage() {
             Bienvenido a SPOT
           </div>
           <CardTitle className="text-[1.9rem] leading-tight font-bold tracking-tight text-slate-900">
-            ¿Cómo quieres usar Spot?
+            Elegí tu perfil
           </CardTitle>
           <CardDescription className="text-sm text-slate-600">
-            Elige una opción para personalizar tu experiencia desde el inicio.
+            Una sola vez definís si usás Spot como explorador o como propietario. Podés cambiar el
+            detalle de tu cuenta más adelante desde el perfil si hace falta.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3 pb-5">
@@ -93,6 +122,7 @@ export default function SelectUsage() {
                     : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-[0_6px_16px_rgba(15,23,42,0.10)]"
                 }`}
                 aria-pressed={isSelected}
+                disabled={loading}
               >
                 <div className="flex items-start gap-3">
                   <span
@@ -116,13 +146,18 @@ export default function SelectUsage() {
               </button>
             )
           })}
+          {error ? (
+            <p className="text-sm font-medium text-red-600" role="alert">
+              {error}
+            </p>
+          ) : null}
           <Button
             type="button"
             onClick={handleContinue}
-            disabled={!selectedRole}
+            disabled={!selected || loading}
             className="mt-3 h-11 w-full rounded-xl bg-slate-900 text-base font-semibold text-white shadow-[0_10px_20px_rgba(15,23,42,0.25)] hover:bg-slate-800 disabled:bg-slate-300 disabled:shadow-none"
           >
-            Continuar
+            {loading ? "Guardando..." : "Continuar"}
           </Button>
         </CardContent>
       </Card>

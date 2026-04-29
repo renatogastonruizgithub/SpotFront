@@ -4,6 +4,8 @@ import { buildApiError } from "@/lib/apiError"
 const TOKEN_KEY = "spot_auth_token"
 const EMAIL_KEY = "spot_auth_email"
 const ONBOARDING_PREFIX = "onboardingChoice:"
+/** Evita bucle / ↔ /seleccionar-uso si el backend indica rol ya asignado pero el JWT sigue con rol user. */
+const ROLE_GATE_OVERRIDE_KEY = "spot_role_gate_override"
 
 /**
  * @param {string} email
@@ -36,6 +38,83 @@ export async function login(email, contraseña) {
   }
   return { token, mensaje: data.mensaje ?? data.Mensaje }
 }
+
+/**
+ * Asignación única de rol post-registro (PATCH /Auth/asignar-rol).
+ * Sustituye el JWT en almacenamiento por el token devuelto en 200 OK.
+ * @param {"explorador"|"propietario"} nuevoRol — minúsculas, como exige el backend
+ * @returns {Promise<{ token: string }>}
+ */
+export async function asignarRol(nuevoRol) {
+  const raw = String(nuevoRol ?? "").trim().toLowerCase()
+  if (raw !== "explorador" && raw !== "propietario") {
+    throw new Error('El rol debe ser "explorador" o "propietario".')
+  }
+
+  const token = getToken()
+  if (!token) {
+    throw new Error("No hay sesión activa.")
+  }
+
+  const res = await fetch(apiUrl("/Auth/asignar-rol"), {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ nuevoRol: raw, token }),
+  })
+
+  if (!res.ok) {
+    throw await buildApiError(res)
+  }
+
+  const data = await res.json()
+  const newToken = data.token ?? data.Token
+  if (!newToken) {
+    throw new Error("Respuesta sin token")
+  }
+  setToken(newToken)
+  clearRoleGateOverride()
+  return { token: newToken }
+}
+
+/**
+ * @param {string} message
+ * @returns {boolean}
+ */
+export function indicatesRoleAlreadyAssignedError(message) {
+  const t = String(message ?? "").toLowerCase()
+  if (!t) return false
+  if (t.includes("ya ") && (t.includes("rol") || t.includes("asign"))) return true
+  if (t.includes("ya no") && t.includes("user")) return true
+  if (t.includes("no está") && t.includes("user")) return true
+  if (t.includes("no es") && t.includes("user")) return true
+  return false
+}
+
+export function setRoleGateOverride() {
+  try {
+    sessionStorage.setItem(ROLE_GATE_OVERRIDE_KEY, "1")
+  } catch {
+    /* ignore */
+  }
+}
+
+export function clearRoleGateOverride() {
+  try {
+    sessionStorage.removeItem(ROLE_GATE_OVERRIDE_KEY)
+  } catch {
+    /* ignore */
+  }
+}
+
+function hasRoleGateOverride() {
+  try {
+    return sessionStorage.getItem(ROLE_GATE_OVERRIDE_KEY) === "1"
+  } catch {
+    return false
+  }
+}
+
+export { hasRoleGateOverride }
 
 /**
  * @param {string} email
@@ -118,6 +197,7 @@ export async function solicitarRecuperacionPassword(email) {
 }
 
 export function logout() {
+  clearRoleGateOverride()
   try {
     localStorage.removeItem(TOKEN_KEY)
     localStorage.removeItem(EMAIL_KEY)
@@ -186,12 +266,26 @@ export function getRoleFromToken() {
     payload?.rol_codigo ??
     payload?.tipo
 
-  const normalized = String(rawRole ?? "").trim().toUpperCase()
-  if (!normalized) return null
-  if (normalized.includes("CLIENTE")) return "CLIENTE"
-  if (normalized.includes("PROPIETARIO")) return "PROPIETARIO"
+  const s = String(rawRole ?? "").trim()
+  if (!s) return null
+
+  const lower = s.toLowerCase()
+  if (lower === "user") return "USER"
+  if (lower === "explorador") return "CLIENTE"
+  if (lower === "propietario") return "PROPIETARIO"
+  if (lower === "admin") return "ADMIN"
+
+  const normalized = s.toUpperCase()
   if (normalized.includes("ADMIN")) return "ADMIN"
+  if (normalized.includes("PROPIETARIO")) return "PROPIETARIO"
+  if (normalized.includes("CLIENTE")) return "CLIENTE"
+  if (normalized.includes("USER")) return "USER"
   return normalized
+}
+
+/** Usuario recién registrado que aún debe elegir explorador o propietario vía PATCH. */
+export function needsRoleAssignment() {
+  return getRoleFromToken() === "USER"
 }
 
 // Obtiene un identificador estable del usuario desde el token (id o email).
