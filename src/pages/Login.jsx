@@ -8,18 +8,10 @@ import {
 } from "@/services/authService"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
 import { Eye, EyeOff } from "lucide-react"
 
-/** Modo claro forzado: texto oscuro = puntos de contraseña y cursor visibles (también si hay .dark en el árbol). */
 const fieldClass =
-  "border-slate-300 bg-white text-slate-900 caret-slate-900 placeholder:text-slate-400 shadow-sm focus-visible:border-sky-500 focus-visible:ring-sky-500/30 dark:border-slate-300 dark:bg-white dark:text-slate-900 dark:placeholder:text-slate-400"
+  "h-11 rounded-[10px] border border-[#22304f] bg-[#0b1730] text-sm text-white caret-white placeholder:text-[#51607f] shadow-none focus-visible:border-[#5a57ff] focus-visible:ring-2 focus-visible:ring-[#5a57ff]/25 dark:border-[#22304f] dark:bg-[#0b1730] dark:text-white dark:placeholder:text-[#51607f]"
 
 export default function Login() {
   const navigate = useNavigate()
@@ -39,6 +31,12 @@ export default function Login() {
 
   const emailNormalizado = email.trim()
   const emailValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailNormalizado)
+
+  // Detecta específicamente el caso de cuenta no activada devuelto por /Auth/login.
+  function requiereActivacion(status, mensaje) {
+    const texto = String(mensaje ?? "").toLowerCase()
+    return status === 400 && texto.includes("activar tu cuenta")
+  }
 
   function manejarCambioEmail(value) {
     setEmail(value)
@@ -72,14 +70,11 @@ export default function Login() {
       // Mostramos exactamente el mensaje backend en 400 (sin texto genérico).
       const msg = err instanceof Error ? err.message : "No se pudo iniciar sesión"
       setError(msg)
-      const code = err instanceof Error ? String(err.code ?? "") : ""
-      const lowerMsg = msg.toLowerCase()
-      if (
-        code.toUpperCase().includes("ACTIV") ||
-        lowerMsg.includes("activar") ||
-        lowerMsg.includes("activada")
-      ) {
+      const status = err instanceof Error ? Number(err.status ?? 0) : 0
+      if (requiereActivacion(status, msg)) {
         setMostrarReenvio(true)
+      } else {
+        setMostrarReenvio(false)
       }
     } finally {
       setLoading(false)
@@ -87,7 +82,17 @@ export default function Login() {
   }
 
   async function handleReenviarActivacion() {
-    if (!emailValido || reenviando) return
+    if (reenviando) return
+
+    // Validación UX: no llamamos API si el email está vacío o inválido.
+    if (!emailNormalizado) {
+      setErrorReenvio("Ingresá tu correo electrónico para reenviar la activación.")
+      return
+    }
+    if (!emailValido) {
+      setErrorReenvio("Ingresá un correo válido para reenviar la activación.")
+      return
+    }
 
     setMensajeReenvio("")
     setErrorReenvio("")
@@ -106,140 +111,167 @@ export default function Login() {
   }
 
   return (
-    <div
-      className="flex min-h-[100dvh] items-center justify-center bg-gradient-to-b from-slate-100 to-slate-200 p-4 [color-scheme:light]"
-    >
-      <Card className="w-full max-w-md border border-slate-200 bg-white text-slate-900 shadow-xl">
-        <CardHeader>
-          <CardTitle className="text-xl text-cyan-700">
-            Iniciar sesión
-          </CardTitle>
-          <CardDescription className="text-slate-600">
-            Ingresá el mismo correo y contraseña con los que te registraste.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {registeredHint ? (
-            <p className="mb-3 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-sky-900">
-              Registro exitoso. Revisá tu correo para confirmar la cuenta antes de
-              entrar.
+    <div className="min-h-[100dvh] bg-[#060d1f] text-white [color-scheme:dark]">
+      <div className="grid min-h-[100dvh] grid-cols-1 lg:grid-cols-2">
+        <section className="flex items-center justify-center px-4 py-8 sm:px-7 lg:px-10">
+          <div className="w-full max-w-[390px]">
+            <h1 className="text-4xl leading-tight font-semibold text-white">Iniciar sesión</h1>
+            <p className="mt-2 text-sm text-[#8a97b5]">
+              Ingresá tu correo y contraseña para entrar a Spot Admin.
             </p>
-          ) : null}
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <div className="space-y-2">
-              <label htmlFor="email" className="text-sm font-medium text-slate-800">
-                Correo electrónico
-              </label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                placeholder="ejemplo@correo.com"
-                value={email}
-                onChange={(e) => manejarCambioEmail(e.target.value)}
-                required
-                className={fieldClass}
-              />
-            </div>
-            <div className="space-y-2">
-              <label
-                htmlFor="contraseña"
-                className="text-sm font-medium text-slate-800"
+            <button
+              type="button"
+              className="mt-6 flex h-11 w-full items-center justify-center gap-2 rounded-[10px] border border-[#22304f] bg-[#0b1730] text-sm font-semibold text-white transition hover:border-[#3a4a72]"
+            >
+              <span
+                aria-hidden
+                className="inline-flex size-5 items-center justify-center rounded-full bg-white text-xs font-bold text-[#1a4fd7]"
               >
-                Contraseña
-              </label>
-              <div className="relative">
-                <Input
-                  id="contraseña"
-                  name="contraseña"
-                  type={mostrarContraseña ? "text" : "password"}
-                  autoComplete="current-password"
-                  placeholder="••••••••"
-                  value={contraseña}
-                  onChange={(e) => setContraseña(e.target.value)}
-                  required
-                  className={`${fieldClass} pr-11`}
-                  aria-describedby="hint-contraseña"
-                />
-                <button
-                  type="button"
-                  onClick={() => setMostrarContraseña((v) => !v)}
-                  className="absolute top-1/2 right-1.5 -translate-y-1/2 rounded-md p-1.5 text-slate-600 transition-colors hover:bg-slate-100 hover:text-cyan-700 focus-visible:ring-2 focus-visible:ring-cyan-500/50 focus-visible:outline-none"
-                  aria-pressed={mostrarContraseña}
-                  aria-label={
-                    mostrarContraseña
-                      ? "Ocultar contraseña"
-                      : "Mostrar contraseña mientras escribís"
-                  }
-                >
-                  {mostrarContraseña ? (
-                    <EyeOff className="size-4" aria-hidden />
-                  ) : (
-                    <Eye className="size-4" aria-hidden />
-                  )}
-                </button>
-              </div>
-              <p id="hint-contraseña" className="text-xs text-slate-600">
-                {mostrarContraseña
-                  ? "Podés ver lo que escribís. Tocá el ícono para ocultarla."
-                  : "Los puntos indican cada letra. Tocá el ojo si querés ver la contraseña."}
+                G
+              </span>
+              Iniciar con Google
+            </button>
+            <div className="my-5 flex items-center gap-3">
+              <span className="h-px flex-1 bg-[#22304f]" />
+              <span className="text-xs text-[#6c7895]">O</span>
+              <span className="h-px flex-1 bg-[#22304f]" />
+            </div>
+            {registeredHint ? (
+              <p className="mb-3 rounded-lg border border-[#244c88] bg-[#112447] px-3 py-2 text-sm text-[#bfdcff]">
+                Registro exitoso. Revisá tu correo para confirmar la cuenta antes de
+                entrar.
               </p>
-              {/* Acción rápida para recuperar contraseña si no recuerda el acceso. */}
-              <p className="pt-1">
-                <Link
-                  to="/recuperar-contraseña"
-                  state={{ email }}
-                  className="text-sm font-medium text-cyan-700 underline-offset-2 hover:underline"
-                >
-                  ¿Olvidaste tu contraseña? Restablecer
+            ) : null}
+            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+              <div className="space-y-2">
+                <label htmlFor="email" className="text-sm font-medium text-[#c8d2e9]">
+                  Correo electrónico
+                </label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  placeholder="admin@spot.com"
+                  value={email}
+                  onChange={(e) => manejarCambioEmail(e.target.value)}
+                  required
+                  className={fieldClass}
+                />
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="contraseña" className="text-sm font-medium text-[#c8d2e9]">
+                  Contraseña
+                </label>
+                <div className="relative">
+                  <Input
+                    id="contraseña"
+                    name="contraseña"
+                    type={mostrarContraseña ? "text" : "password"}
+                    autoComplete="current-password"
+                    placeholder="••••••••"
+                    value={contraseña}
+                    onChange={(e) => setContraseña(e.target.value)}
+                    required
+                    className={`${fieldClass} pr-11`}
+                    aria-describedby="hint-contraseña"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setMostrarContraseña((v) => !v)}
+                    className="absolute top-1/2 right-1.5 -translate-y-1/2 rounded-md p-1.5 text-[#a2afca] transition-colors hover:bg-[#162745] hover:text-white focus-visible:ring-2 focus-visible:ring-[#5a57ff]/40 focus-visible:outline-none"
+                    aria-pressed={mostrarContraseña}
+                    aria-label={
+                      mostrarContraseña
+                        ? "Ocultar contraseña"
+                        : "Mostrar contraseña mientras escribís"
+                    }
+                  >
+                    {mostrarContraseña ? (
+                      <EyeOff className="size-4" aria-hidden />
+                    ) : (
+                      <Eye className="size-4" aria-hidden />
+                    )}
+                  </button>
+                </div>
+                <p id="hint-contraseña" className="text-xs text-[#7f8eb0]">
+                  {mostrarContraseña
+                    ? "Podés ver lo que escribís. Tocá el ícono para ocultarla."
+                    : "Los puntos indican cada letra. Tocá el ojo si querés ver la contraseña."}
+                </p>
+                <p className="pt-1">
+                  <Link
+                    to="/recuperar-contraseña"
+                    state={{ email }}
+                    className="text-sm font-medium text-[#7987aa] transition hover:text-[#cfd9ef]"
+                  >
+                    ¿Olvidaste tu contraseña? Restablecer
+                  </Link>
+                </p>
+              </div>
+              {error ? (
+                <p className="text-sm font-medium text-red-400" role="alert">
+                  {error}
+                </p>
+              ) : null}
+              {mostrarReenvio ? (
+                <div className="rounded-lg border border-[#4f6ba5] bg-[#13213f] p-3">
+                  <p className="text-sm text-[#d5e5ff]">
+                    Tu cuenta todavía no está activada. Reenviá el correo de activación.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleReenviarActivacion}
+                    disabled={reenviando}
+                    className="mt-2 w-fit text-sm font-medium text-[#91a8de] underline-offset-2 enabled:hover:underline disabled:cursor-not-allowed disabled:text-[#5d6780]"
+                  >
+                    {reenviando ? "Enviando..." : "Reenviar correo de activación"}
+                  </button>
+                </div>
+              ) : null}
+              {mensajeReenvio ? (
+                <p className="text-sm font-medium text-emerald-400" role="status">
+                  {mensajeReenvio}
+                </p>
+              ) : null}
+              {errorReenvio ? (
+                <p className="text-sm font-medium text-red-400" role="alert">
+                  {errorReenvio}
+                </p>
+              ) : null}
+              <Button
+                type="submit"
+                disabled={loading}
+                className="h-11 w-full rounded-[10px] bg-[#4e46ff] text-sm font-semibold text-white transition hover:bg-[#5e56ff]"
+              >
+                {loading ? "Ingresando..." : "Ingresar"}
+              </Button>
+              <p className="text-sm text-[#8a97b5]">
+                No tenes cuenta?{" "}
+                <Link to="/register" className="font-semibold text-[#8fa2ff]">
+                  Crear cuenta
                 </Link>
               </p>
-            </div>
-            {error ? (
-              <p className="text-sm font-medium text-red-600" role="alert">
-                {error}
-              </p>
-            ) : null}
-            {mostrarReenvio ? (
-              <button
-                type="button"
-                onClick={handleReenviarActivacion}
-                disabled={!emailValido || reenviando}
-                className="w-fit text-sm font-medium text-cyan-700 underline-offset-2 enabled:hover:underline disabled:cursor-not-allowed disabled:text-slate-400"
-              >
-                {reenviando ? "Enviando..." : "Reenviar correo de activación"}
-              </button>
-            ) : null}
-            {mensajeReenvio ? (
-              <p className="text-sm font-medium text-emerald-700" role="status">
-                {mensajeReenvio}
-              </p>
-            ) : null}
-            {errorReenvio ? (
-              <p className="text-sm font-medium text-red-600" role="alert">
-                {errorReenvio}
-              </p>
-            ) : null}
-            <Button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-cyan-600 text-white hover:bg-cyan-700"
-            >
-              {loading ? "Entrando…" : "Entrar"}
-            </Button>
-            <p className="text-center text-sm text-slate-600">
-              ¿No tenés cuenta?{" "}
-              <Link
-                to="/seleccionar-uso"
-                className="font-medium text-cyan-700 underline-offset-2 hover:underline"
-              >
-                Registrate
-              </Link>
+            </form>
+          </div>
+        </section>
+        <section className="relative hidden overflow-hidden bg-[#0a1630] lg:flex lg:items-center lg:justify-center">
+          <div
+            className="absolute inset-0 opacity-35"
+            style={{
+              backgroundImage:
+                "linear-gradient(rgba(121,153,219,0.28) 1px, transparent 1px), linear-gradient(90deg, rgba(121,153,219,0.28) 1px, transparent 1px)",
+              backgroundSize: "56px 56px",
+            }}
+          />
+          <div className="relative px-8 text-center">
+            <h2 className="text-6xl font-semibold tracking-tight text-white">Spot</h2>
+            <p className="mx-auto mt-3 max-w-[380px] text-2xl leading-relaxed text-[#d6dff2]">
+              App para descubrir bares, promociones y experiencias cerca tuyo.
             </p>
-          </form>
-        </CardContent>
-      </Card>
+          </div>
+        </section>
+      </div>
     </div>
   )
 }

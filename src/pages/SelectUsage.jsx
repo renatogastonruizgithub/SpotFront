@@ -1,7 +1,6 @@
-import { useEffect, useMemo, useState } from "react"
+import { useState } from "react"
 import { Navigate, useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
-import { fetchRoles } from "@/services/usuariosService"
 import {
   getHomeRouteByRole,
   getOnboardingChoice,
@@ -17,62 +16,14 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 
-function getRoleIds() {
-  const cliente = Number(import.meta.env.VITE_REGISTRO_ID_ROL_CLIENTE)
-  const propietario = Number(import.meta.env.VITE_REGISTRO_ID_ROL_PROPIETARIO)
-  const clienteSafe =
-    Number.isFinite(cliente) && cliente > 0 ? Math.floor(cliente) : 2
-  const propietarioSafe =
-    Number.isFinite(propietario) && propietario > 0 ? Math.floor(propietario) : 3
-
-  return {
-    cliente: clienteSafe === 2 || clienteSafe === 3 ? clienteSafe : 2,
-    propietario:
-      propietarioSafe === 2 || propietarioSafe === 3 ? propietarioSafe : 3,
-  }
-}
-
 export default function SelectUsage() {
   const navigate = useNavigate()
-  // Detecta si la pantalla se usa como onboarding post-login o como selección para registro.
   const authenticated = isAuthenticated()
+  if (!authenticated) {
+    return <Navigate to="/login" replace />
+  }
+
   const [selectedOption, setSelectedOption] = useState("")
-  const roleIds = useMemo(() => getRoleIds(), [])
-  const [rolesPublicos, setRolesPublicos] = useState([])
-  const [errorRoles, setErrorRoles] = useState("")
-
-  useEffect(() => {
-    let cancelled = false
-
-    async function loadRoles() {
-      setErrorRoles("")
-      try {
-        const roles = await fetchRoles()
-        if (!cancelled) {
-          setRolesPublicos(Array.isArray(roles) ? roles : [])
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setRolesPublicos([])
-          setErrorRoles(err instanceof Error ? err.message : "No se pudieron cargar los roles")
-        }
-      }
-    }
-
-    loadRoles()
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
-  const roleCliente =
-    rolesPublicos.find((role) => String(role?.codigo ?? "").toUpperCase() === "CLIENTE") ??
-    null
-  const rolePropietario =
-    rolesPublicos.find((role) => String(role?.codigo ?? "").toUpperCase() === "PROPIETARIO") ??
-    null
-  const roleClienteId = Number(roleCliente?.id_rol)
-  const rolePropietarioId = Number(rolePropietario?.id_rol)
 
   const options = [
     {
@@ -81,7 +32,6 @@ export default function SelectUsage() {
       description: "Descubre bares, promociones y eventos cerca de ti.",
       helper: "Ideal para salir y descubrir promos",
       icon: Compass,
-      roleId: roleClienteId === 2 ? 2 : roleIds.cliente,
       roleName: "cliente",
     },
     {
@@ -90,7 +40,6 @@ export default function SelectUsage() {
       description: "Administra tu bar, publica promociones y llega a más clientes.",
       helper: "Ideal para dueños y emprendedores",
       icon: Store,
-      roleId: rolePropietarioId === 3 ? 3 : roleIds.propietario,
       roleName: "propietario",
     },
   ]
@@ -99,29 +48,18 @@ export default function SelectUsage() {
 
   function handleContinue() {
     if (!selectedRole) return
-    if (authenticated) {
-      // Modo onboarding (usuario logueado): guardamos elección única por usuario.
-      setOnboardingChoice(selectedRole.roleName)
-      if (selectedRole.roleName === "propietario") {
-        navigate("/owner/dashboard", { replace: true })
-        return
-      }
-      navigate("/", { replace: true })
+
+    // Onboarding post-activación/login: se guarda solo una vez por usuario.
+    setOnboardingChoice(selectedRole.roleName)
+    if (selectedRole.roleName === "propietario") {
+      navigate("/owner/dashboard", { replace: true })
       return
     }
-
-    // Modo registro (usuario no logueado): se elige rol y se continúa al formulario de alta.
-    navigate("/register", {
-      state: {
-        roleId: selectedRole.roleId,
-        roleName: selectedRole.roleName,
-      },
-    })
+    navigate("/", { replace: true })
   }
 
-  // Si viene logueado y ya eligió uso antes, no mostramos onboarding otra vez.
-  const onboardingChoice = authenticated ? getOnboardingChoice() : null
-  if (authenticated && onboardingChoice) {
+  const onboardingChoice = getOnboardingChoice()
+  if (onboardingChoice) {
     return <Navigate to={getHomeRouteByRole()} replace />
   }
 
@@ -141,11 +79,6 @@ export default function SelectUsage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3 pb-5">
-          {errorRoles ? (
-            <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-              {errorRoles}. Se usarán valores de respaldo para continuar.
-            </p>
-          ) : null}
           {options.map((option) => {
             const isSelected = selectedOption === option.id
             const Icon = option.icon

@@ -11,8 +11,14 @@ export default function AppRoutes() {
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/recuperar-contraseña" element={<RecoverPassword />} />
-      {/* Pantalla de selección de uso: se usa en registro y también post-login onboarding. */}
-      <Route path="/seleccionar-uso" element={<SelectUsage />} />
+      <Route
+        path="/seleccionar-uso"
+        element={
+          <ProtectedRoute>
+            <SelectUsage />
+          </ProtectedRoute>
+        }
+      />
       <Route path="/register" element={<Register />} />
       <Route
         path="/"

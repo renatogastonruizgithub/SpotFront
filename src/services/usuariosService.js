@@ -5,7 +5,7 @@ import { getToken } from "@/services/authService"
 /**
  * Contrato backend definitivo:
  * POST /Auth/registrarUsuarios
- * Body: { email, contraseña, id_rol }
+ * Body: { email, contraseña }
  */
 const REGISTRO_PATH = "/Auth/registrarUsuarios"
 
@@ -25,13 +25,11 @@ export async function fetchRoles() {
 /**
  * Registro previo al login (público: sin Bearer).
  * @param {{ email: string, contraseña: string }} body
- * @param {number} idRol — se envía dentro del body como `id_rol`
  */
-export async function registrarUsuario(body, idRol) {
+export async function registrarUsuario(body) {
   const payload = {
     email: body.email,
     contraseña: body.contraseña,
-    id_rol: Number(idRol),
   }
   const path = REGISTRO_PATH.startsWith("/") ? REGISTRO_PATH : `/${REGISTRO_PATH}`
   const res = await fetch(apiUrl(path), {
