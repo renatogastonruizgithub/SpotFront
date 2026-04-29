@@ -8,14 +8,20 @@ import { Eye, EyeOff } from "lucide-react"
 const fieldClass =
   "h-11 rounded-[10px] border border-[#22304f] bg-[#0b1730] text-sm text-white caret-white placeholder:text-[#51607f] shadow-none focus-visible:border-[#5a57ff] focus-visible:ring-2 focus-visible:ring-[#5a57ff]/25 dark:border-[#22304f] dark:bg-[#0b1730] dark:text-white dark:placeholder:text-[#51607f]"
 
-function registrationMessageFromCode(code, fallback) {
+function registrationMessageFromCode(code, status, fallback) {
+  if (status === 409) {
+    return "Ese correo ya está registrado. Probá iniciar sesión o recuperar acceso."
+  }
+  if (status === 405) {
+    return "El endpoint de registro no acepta este método. Revisemos la ruta/método con backend."
+  }
+  if (status >= 500) {
+    return "Error interno del servidor al crear la cuenta. Intentá nuevamente en unos minutos."
+  }
+
   switch (code) {
     case "EMAIL_ALREADY_EXISTS":
       return "Ese correo ya está registrado. Probá iniciar sesión o recuperar acceso."
-    case "ROLE_NOT_FOUND":
-      return "El rol seleccionado no existe. Volvé a elegir cómo querés usar Spot."
-    case "REGISTRATION_ROLE_NOT_ALLOWED":
-      return "Ese rol no está habilitado para registro público."
     default:
       return fallback
   }
@@ -57,7 +63,7 @@ export default function Register() {
       })
     } catch (err) {
       if (err instanceof Error) {
-        setError(registrationMessageFromCode(err.code, err.message))
+        setError(registrationMessageFromCode(err.code, Number(err.status ?? 0), err.message))
       } else {
         setError("No se pudo registrar")
       }

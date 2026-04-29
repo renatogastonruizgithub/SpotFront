@@ -77,11 +77,23 @@ export async function reenviarActivacion(email) {
  * @returns {Promise<string>}
  */
 export async function solicitarRecuperacionPassword(email) {
-  const res = await fetch(apiUrl("/Auth/solicitar-recuperacion-contrasena"), {
+  // Algunas versiones del backend exponen esta ruta como /Auth/solicitar-recupero.
+  const primaryPath =
+    import.meta.env.VITE_AUTH_SOLICITAR_RECUPERO_PATH ?? "/Auth/solicitar-recupero"
+  let res = await fetch(apiUrl(primaryPath), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email }),
   })
+
+  // Fallback de compatibilidad para instalaciones con ruta antigua.
+  if (res.status === 404 || res.status === 405) {
+    res = await fetch(apiUrl("/Auth/solicitar-recuperacion-contrasena"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    })
+  }
 
   if (!res.ok) {
     throw await buildApiError(res)

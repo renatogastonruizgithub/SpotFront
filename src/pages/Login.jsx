@@ -38,6 +38,16 @@ export default function Login() {
     return status === 400 && texto.includes("activar tu cuenta")
   }
 
+  function loginMessageFromStatus(status, fallback) {
+    if (status === 405) {
+      return "El endpoint de login no acepta GET. Debe llamarse por POST desde el frontend."
+    }
+    if (status >= 500) {
+      return "Error interno del servidor al iniciar sesión. Intentá nuevamente en unos minutos."
+    }
+    return fallback
+  }
+
   function manejarCambioEmail(value) {
     setEmail(value)
     setMensajeReenvio("")
@@ -69,8 +79,8 @@ export default function Login() {
     } catch (err) {
       // Mostramos exactamente el mensaje backend en 400 (sin texto genérico).
       const msg = err instanceof Error ? err.message : "No se pudo iniciar sesión"
-      setError(msg)
       const status = err instanceof Error ? Number(err.status ?? 0) : 0
+      setError(loginMessageFromStatus(status, msg))
       if (requiereActivacion(status, msg)) {
         setMostrarReenvio(true)
       } else {
