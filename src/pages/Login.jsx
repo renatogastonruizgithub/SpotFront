@@ -8,12 +8,17 @@ import {
 } from "@/services/authService"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import AuthFloatingThemeToggle from "@/components/auth/AuthFloatingThemeToggle"
+import { useAuthPageTheme } from "@/hooks/useAuthPageTheme"
 import { Eye, EyeOff } from "lucide-react"
 
-const fieldClass =
-  "h-11 rounded-[10px] border border-[#22304f] bg-[#0b1730] text-sm text-white caret-white shadow-none focus-visible:border-[#5a57ff] focus-visible:ring-2 focus-visible:ring-[#5a57ff]/25 dark:border-[#22304f] dark:bg-[#0b1730] dark:text-white"
-
 export default function Login() {
+  const { theme, toggleTheme } = useAuthPageTheme()
+  const isDark = theme === "dark"
+  const fieldClass = isDark
+    ? "h-11 rounded-[10px] border border-[#22304f] bg-[#0b1730] text-sm text-white caret-white shadow-none focus-visible:border-[#5a57ff] focus-visible:ring-2 focus-visible:ring-[#5a57ff]/25"
+    : "h-11 rounded-[10px] border border-slate-200 bg-white text-sm text-slate-900 caret-slate-900 shadow-none placeholder:text-slate-400 focus-visible:border-[#5a57ff] focus-visible:ring-2 focus-visible:ring-[#5a57ff]/25"
+
   const navigate = useNavigate()
   const location = useLocation()
   const from = location.state?.from?.pathname || "/"
@@ -120,17 +125,35 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-[100dvh] bg-[#060d1f] text-white [color-scheme:dark]">
+    <div
+      className={
+        isDark
+          ? "min-h-[100dvh] bg-[#060d1f] text-white [color-scheme:dark]"
+          : "min-h-[100dvh] bg-[#f4f6fc] text-slate-900 [color-scheme:light]"
+      }
+    >
       <div className="grid min-h-[100dvh] grid-cols-1 lg:grid-cols-2">
-        <section className="flex items-center justify-center px-4 py-8 sm:px-7 lg:px-10">
-          <div className="w-full max-w-[390px]">
-            <h1 className="text-4xl leading-tight font-semibold text-white">Iniciar sesión</h1>
-            <p className="mt-2 text-sm text-[#8a97b5]">
+        <section className="flex min-h-[100dvh] flex-col justify-center overflow-y-auto px-4 py-6 sm:px-7 lg:min-h-[100dvh] lg:justify-center lg:overflow-y-visible lg:px-10">
+          <div className="mx-auto w-full max-w-[390px] text-center lg:text-left">
+            <h1
+              className={
+                isDark
+                  ? "text-4xl leading-tight font-semibold text-white"
+                  : "text-4xl leading-tight font-semibold text-black"
+              }
+            >
+              Iniciar sesión
+            </h1>
+            <p className={`mt-2 text-sm ${isDark ? "text-[#8a97b5]" : "text-slate-500"}`}>
               Ingresá tu correo y contraseña para entrar a Spot Admin.
             </p>
             <button
               type="button"
-              className="mt-6 flex h-11 w-full items-center justify-center gap-2 rounded-[10px] border border-[#22304f] bg-[#0b1730] text-sm font-semibold text-white transition hover:border-[#3a4a72]"
+              className={
+                isDark
+                  ? "mt-6 flex h-11 w-full items-center justify-center gap-2 rounded-[10px] border border-[#22304f] bg-[#0b1730] text-sm font-semibold text-white transition hover:border-[#3a4a72]"
+                  : "mt-6 flex h-11 w-full items-center justify-center gap-2 rounded-[10px] border border-slate-200 bg-white text-sm font-semibold text-slate-900 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
+              }
             >
               <span
                 aria-hidden
@@ -141,138 +164,199 @@ export default function Login() {
               Iniciar con Google
             </button>
             <div className="my-5 flex items-center gap-3">
-              <span className="h-px flex-1 bg-[#22304f]" />
-              <span className="text-xs text-[#6c7895]">O</span>
-              <span className="h-px flex-1 bg-[#22304f]" />
+              <span className={`h-px flex-1 ${isDark ? "bg-[#22304f]" : "bg-slate-200"}`} />
+              <span className={`text-xs ${isDark ? "text-[#6c7895]" : "text-slate-400"}`}>O</span>
+              <span className={`h-px flex-1 ${isDark ? "bg-[#22304f]" : "bg-slate-200"}`} />
             </div>
             {registeredHint ? (
-              <p className="mb-3 rounded-lg border border-[#244c88] bg-[#112447] px-3 py-2 text-sm text-[#bfdcff]">
+              <p
+                className={
+                  isDark
+                    ? "mb-3 rounded-lg border border-[#244c88] bg-[#112447] px-3 py-2 text-left text-sm text-[#bfdcff]"
+                    : "mb-3 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-left text-sm text-blue-950"
+                }
+              >
                 Registro exitoso. Revisá tu correo para confirmar la cuenta antes de
                 entrar.
               </p>
             ) : null}
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-              <div className="space-y-2">
-                <label htmlFor="email" className="text-sm font-medium text-[#c8d2e9]">
-                  Correo electrónico
-                </label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  value={email}
-                  onChange={(e) => manejarCambioEmail(e.target.value)}
-                  required
-                  className={fieldClass}
-                />
-              </div>
-              <div className="space-y-2">
-                <label htmlFor="contraseña" className="text-sm font-medium text-[#c8d2e9]">
-                  Contraseña
-                </label>
-                <div className="relative">
+              <div className="w-full text-left">
+                <div className="space-y-2">
+                  <label
+                    htmlFor="email"
+                    className={`text-sm font-medium ${isDark ? "text-[#c8d2e9]" : "text-slate-700"}`}
+                  >
+                    Correo electrónico
+                  </label>
                   <Input
-                    id="contraseña"
-                    name="contraseña"
-                    type={mostrarContraseña ? "text" : "password"}
-                    autoComplete="current-password"
-                    value={contraseña}
-                    onChange={(e) => setContraseña(e.target.value)}
+                    id="email"
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    value={email}
+                    onChange={(e) => manejarCambioEmail(e.target.value)}
                     required
-                    className={`${fieldClass} pr-11`}
+                    className={fieldClass}
                   />
-                  <button
-                    type="button"
-                    onClick={() => setMostrarContraseña((v) => !v)}
-                    className="absolute top-1/2 right-1.5 -translate-y-1/2 rounded-md p-1.5 text-[#a2afca] transition-colors hover:bg-[#162745] hover:text-white focus-visible:ring-2 focus-visible:ring-[#5a57ff]/40 focus-visible:outline-none"
-                    aria-pressed={mostrarContraseña}
-                    aria-label={
-                      mostrarContraseña
-                        ? "Ocultar contraseña"
-                        : "Mostrar contraseña mientras escribís"
-                    }
-                  >
-                    {mostrarContraseña ? (
-                      <EyeOff className="size-4" aria-hidden />
-                    ) : (
-                      <Eye className="size-4" aria-hidden />
-                    )}
-                  </button>
                 </div>
-                <p className="pt-1">
-                  <Link
-                    to="/recuperar-contraseña"
-                    state={{ email }}
-                    className="text-sm font-medium text-[#7987aa] transition hover:text-[#cfd9ef]"
+                <div className="mt-4 space-y-2">
+                  <label
+                    htmlFor="contraseña"
+                    className={`text-sm font-medium ${isDark ? "text-[#c8d2e9]" : "text-slate-700"}`}
                   >
-                    ¿Olvidaste tu contraseña? Restablecer
-                  </Link>
-                </p>
+                    Contraseña
+                  </label>
+                  <div className="relative">
+                    <Input
+                      id="contraseña"
+                      name="contraseña"
+                      type={mostrarContraseña ? "text" : "password"}
+                      autoComplete="current-password"
+                      value={contraseña}
+                      onChange={(e) => setContraseña(e.target.value)}
+                      required
+                      className={`${fieldClass} pr-11`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setMostrarContraseña((v) => !v)}
+                      className={
+                        isDark
+                          ? "absolute top-1/2 right-1.5 -translate-y-1/2 rounded-md p-1.5 text-[#a2afca] transition-colors hover:bg-[#162745] hover:text-white focus-visible:ring-2 focus-visible:ring-[#5a57ff]/40 focus-visible:outline-none"
+                          : "absolute top-1/2 right-1.5 -translate-y-1/2 rounded-md p-1.5 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 focus-visible:ring-2 focus-visible:ring-[#5a57ff]/40 focus-visible:outline-none"
+                      }
+                      aria-pressed={mostrarContraseña}
+                      aria-label={
+                        mostrarContraseña
+                          ? "Ocultar contraseña"
+                          : "Mostrar contraseña mientras escribís"
+                      }
+                    >
+                      {mostrarContraseña ? (
+                        <EyeOff className="size-4" aria-hidden />
+                      ) : (
+                        <Eye className="size-4" aria-hidden />
+                      )}
+                    </button>
+                  </div>
+                  <p className="pt-1">
+                    <Link
+                      to="/recuperar-contraseña"
+                      state={{ email }}
+                      className={
+                        isDark
+                          ? "text-sm font-medium text-[#7987aa] transition hover:text-[#cfd9ef]"
+                          : "text-sm font-medium text-slate-600 transition hover:text-slate-900"
+                      }
+                    >
+                      ¿Olvidaste tu contraseña? Restablecer
+                    </Link>
+                  </p>
+                </div>
               </div>
               {error ? (
-                <p className="text-sm font-medium text-red-400" role="alert">
+                <p className="text-left text-sm font-medium text-red-400" role="alert">
                   {error}
                 </p>
               ) : null}
               {mostrarReenvio ? (
-                <div className="rounded-lg border border-[#4f6ba5] bg-[#13213f] p-3">
-                  <p className="text-sm text-[#d5e5ff]">
+                <div
+                  className={
+                    isDark
+                      ? "rounded-lg border border-[#4f6ba5] bg-[#13213f] p-3 text-left"
+                      : "rounded-lg border border-blue-200 bg-blue-50/90 p-3 text-left"
+                  }
+                >
+                  <p className={`text-sm ${isDark ? "text-[#d5e5ff]" : "text-slate-800"}`}>
                     Tu cuenta todavía no está activada. Reenviá el correo de activación.
                   </p>
                   <button
                     type="button"
                     onClick={handleReenviarActivacion}
                     disabled={reenviando}
-                    className="mt-2 w-fit text-sm font-medium text-[#91a8de] underline-offset-2 enabled:hover:underline disabled:cursor-not-allowed disabled:text-[#5d6780]"
+                    className={
+                      isDark
+                        ? "mt-2 w-fit text-sm font-medium text-[#91a8de] underline-offset-2 enabled:hover:underline disabled:cursor-not-allowed disabled:text-[#5d6780]"
+                        : "mt-2 w-fit text-sm font-medium text-[#4e46ff] underline-offset-2 enabled:hover:underline disabled:cursor-not-allowed disabled:text-slate-400"
+                    }
                   >
                     {reenviando ? "Enviando..." : "Reenviar correo de activación"}
                   </button>
                 </div>
               ) : null}
               {mensajeReenvio ? (
-                <p className="text-sm font-medium text-emerald-400" role="status">
+                <p className="text-left text-sm font-medium text-emerald-400" role="status">
                   {mensajeReenvio}
                 </p>
               ) : null}
               {errorReenvio ? (
-                <p className="text-sm font-medium text-red-400" role="alert">
+                <p className="text-left text-sm font-medium text-red-400" role="alert">
                   {errorReenvio}
                 </p>
               ) : null}
               <Button
                 type="submit"
                 disabled={loading}
-                className="h-11 w-full rounded-[10px] bg-[#4e46ff] text-sm font-semibold text-white transition hover:bg-[#5e56ff]"
+                className={
+                  isDark
+                    ? "h-11 w-full rounded-[10px] border border-[#3a5a9d] bg-[#121f3d] text-sm font-semibold text-white shadow-[0_4px_16px_rgba(0,0,0,0.45)] transition hover:border-[#4d6eb8] hover:bg-[#1a2d55] focus-visible:ring-2 focus-visible:ring-[#5a7fd0]/50 disabled:cursor-not-allowed disabled:opacity-50"
+                    : "h-11 w-full rounded-[10px] border border-black bg-black text-sm font-semibold text-white transition hover:bg-neutral-900 focus-visible:ring-2 focus-visible:ring-black/30 disabled:cursor-not-allowed disabled:opacity-50"
+                }
               >
                 {loading ? "Ingresando..." : "Ingresar"}
               </Button>
-              <p className="text-sm text-[#8a97b5]">
+              <p className={`text-sm ${isDark ? "text-[#8a97b5]" : "text-slate-500"}`}>
                 No tenes cuenta?{" "}
-                <Link to="/register" className="font-semibold text-[#8fa2ff]">
+                <Link
+                  to="/register"
+                  className={`font-semibold ${isDark ? "text-white" : "text-black"}`}
+                >
                   Crear cuenta
                 </Link>
               </p>
             </form>
           </div>
         </section>
-        <section className="relative hidden overflow-hidden bg-[#0a1630] lg:flex lg:items-center lg:justify-center">
+        <section
+          className={
+            isDark
+              ? "relative hidden overflow-hidden bg-[#0a1630] lg:flex lg:items-center lg:justify-center"
+              : "relative hidden overflow-hidden bg-[#dce7f7] lg:flex lg:items-center lg:justify-center"
+          }
+        >
           <div
             className="absolute inset-0 opacity-35"
             style={{
-              backgroundImage:
-                "linear-gradient(rgba(121,153,219,0.28) 1px, transparent 1px), linear-gradient(90deg, rgba(121,153,219,0.28) 1px, transparent 1px)",
+              backgroundImage: isDark
+                ? "linear-gradient(rgba(121,153,219,0.28) 1px, transparent 1px), linear-gradient(90deg, rgba(121,153,219,0.28) 1px, transparent 1px)"
+                : "linear-gradient(rgba(71,85,105,0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(71,85,105,0.2) 1px, transparent 1px)",
               backgroundSize: "56px 56px",
             }}
           />
           <div className="relative px-8 text-center">
-            <h2 className="text-6xl font-semibold tracking-tight text-white">Spot</h2>
-            <p className="mx-auto mt-3 max-w-[380px] text-2xl leading-relaxed text-[#d6dff2]">
+            <h2
+              className={
+                isDark
+                  ? "text-6xl font-semibold tracking-tight text-white"
+                  : "text-6xl font-semibold tracking-tight text-slate-900"
+              }
+            >
+              Spot
+            </h2>
+            <p
+              className={
+                isDark
+                  ? "mx-auto mt-3 max-w-[380px] text-2xl leading-relaxed text-[#d6dff2]"
+                  : "mx-auto mt-3 max-w-[380px] text-2xl leading-relaxed text-slate-600"
+              }
+            >
               App para descubrir bares, promociones y experiencias cerca tuyo.
             </p>
           </div>
         </section>
       </div>
+      <AuthFloatingThemeToggle isDark={isDark} onToggle={toggleTheme} />
     </div>
   )
 }
