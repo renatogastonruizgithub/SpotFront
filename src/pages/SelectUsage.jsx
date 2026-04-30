@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { Navigate, useNavigate } from "react-router-dom"
-import { Button } from "@/components/ui/button"
+import { ArrowLeft, Compass, Store } from "lucide-react"
+import UsageOptionCard from "@/components/select-usage/UsageOptionCard"
 import {
   asignarRol,
   getHomeRouteByRole,
@@ -10,18 +11,11 @@ import {
   setOnboardingChoice,
   setRoleGateOverride,
 } from "@/services/authService"
-import { Compass, Sparkles, Store } from "lucide-react"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
 
+// Traduce errores HTTP de PATCH rol a mensajes claros para el usuario en español.
 function mensajeErrorAsignacion(err) {
-  const status = err && typeof err === "object" && "status" in err ? Number(err.status) : 0
-  const msg = err instanceof Error ? err.message : ""
+  const status = err && typeof err === "object" && "status" in err ? Number(err.status) : 0 // Extrae código HTTP si existe
+  const msg = err instanceof Error ? err.message : "" // Mensaje de Error o cadena vacía
   if (status === 500 || status >= 500) {
     return "Error del servidor. Intentá nuevamente en unos minutos."
   }
@@ -34,133 +28,146 @@ function mensajeErrorAsignacion(err) {
   return msg || "No se pudo guardar tu perfil."
 }
 
+// Pantalla de onboarding: el usuario elige explorar bares o publicar su bar y se asigna el rol en el backend.
 export default function SelectUsage() {
-  const navigate = useNavigate()
-  const authenticated = isAuthenticated()
-  const [selectedOption, setSelectedOption] = useState("")
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState("")
+  const navigate = useNavigate() // Hook de react-router para navegar programáticamente (continuar / volver)
+  const authenticated = isAuthenticated() // true si hay JWT válido en almacenamiento del cliente
+  const [selectedOption, setSelectedOption] = useState("") // "" | "explorar" | "publicar": opción activa en la UI
+  const [loading, setLoading] = useState(false) // true mientras se llama a asignarRol
+  const [error, setError] = useState("") // Mensaje de error visible bajo las tarjetas si falla la API
 
+  // Sin sesión no puede asignar rol: redirige al login.
   if (!authenticated) {
     return <Navigate to="/login" replace />
   }
 
+  // Si el JWT ya trae rol asignado, no mostrar esta pantalla: va al home correspondiente.
   if (!needsRoleAssignment()) {
     return <Navigate to={getHomeRouteByRole()} replace />
   }
 
+  // Datos de cada tarjeta: textos del diseño + rol API + ícono y estilo del cuadrado del ícono.
   const options = [
     {
-      id: "explorar",
-      title: "Explorar bares y lugares",
-      description: "Descubrí bares, promociones y eventos cerca tuyo.",
-      helper: "Ideal para salir y descubrir promos",
-      icon: Compass,
-      nuevoRol: "explorador",
+      id: "explorar", // Valor que guardamos en selectedOption al elegir la primera card
+      title: "Explorar bares", // Encabezado en negrita de la opción 1
+      description: "Descubrí bares, promos y lugares cerca tuyo", // Cuerpo gris bajo el título
+      nuevoRol: "explorador", // Valor enviado en PATCH /Auth/asignar-rol para modo explorador
+      icon: Compass, // Ícono brújula dentro del cuadrado negro
+      exploreVariant: true, // Activa cuadrado negro + ícono blanco
     },
     {
-      id: "publicar",
-      title: "Publicar mi bar o negocio",
-      description: "Administrá tu bar, publicá promociones y llegá a más clientes.",
-      helper: "Ideal para dueños y emprendedores",
-      icon: Store,
-      nuevoRol: "propietario",
+      id: "publicar", // Valor para la segunda card
+      title: "Publicar mi bar", // Encabezado opción 2
+      description: "Mostrá tu bar, promociones y llegá a más clientes", // Cuerpo según brief
+      nuevoRol: "propietario", // Rol de dueño en el backend
+      icon: Store, // Ícono tienda / negocio
+      exploreVariant: false, // Cuadrado con fondo gris claro e ícono oscuro
     },
   ]
 
+  // Objeto de la opción actualmente elegida; null si selectedOption sigue vacío.
   const selected = options.find((option) => option.id === selectedOption) ?? null
 
+  // Envía el rol al servidor y redirige al mapa o flujo de propietario según respuesta.
   async function handleContinue() {
-    if (!selected || loading) return
-    setError("")
-    setLoading(true)
+    if (!selected || loading) return // No hace nada sin selección o durante una petición en curso
+    setError("") // Limpia error previo antes de reintentar
+    setLoading(true) // Deshabilita botón y tarjetas visualmente
     try {
-      await asignarRol(selected.nuevoRol)
-      setOnboardingChoice(selected.nuevoRol === "explorador" ? "cliente" : "propietario")
-      navigate(getHomeRouteByRole(), { replace: true })
+      await asignarRol(selected.nuevoRol) // PATCH rol en backend según la opción elegida
+      setOnboardingChoice(selected.nuevoRol === "explorador" ? "cliente" : "propietario") // Persiste elección local para la app
+      navigate(getHomeRouteByRole(), { replace: true }) // Entra al home acorde al nuevo rol
     } catch (err) {
       const msg = err instanceof Error ? err.message : ""
       if (indicatesRoleAlreadyAssignedError(msg)) {
-        setRoleGateOverride()
+        setRoleGateOverride() // Sincroniza estado local si el backend dice que el rol ya estaba asignado
         navigate(getHomeRouteByRole(), { replace: true })
         return
       }
-      setError(mensajeErrorAsignacion(err))
+      setError(mensajeErrorAsignacion(err)) // Muestra feedback amigable en pantalla
     } finally {
-      setLoading(false)
+      setLoading(false) // Rehabilita UI al terminar éxito o error
     }
   }
 
   return (
-    <div className="flex min-h-[100dvh] items-center justify-center bg-gradient-to-b from-[#f8fbff] via-slate-50 to-slate-100 p-4 [color-scheme:light]">
-      <Card className="w-full max-w-lg border border-slate-200/80 bg-white/95 text-slate-900 shadow-[0_16px_35px_rgba(15,23,42,0.10)]">
-        <CardHeader className="space-y-3 pb-4">
-          <div className="inline-flex w-fit items-center gap-2 rounded-full border border-sky-100 bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700">
-            <Sparkles size={14} />
-            Bienvenido a SPOT
-          </div>
-          <CardTitle className="text-[1.9rem] leading-tight font-bold tracking-tight text-slate-900">
-            Elegí tu perfil
-          </CardTitle>
-          <CardDescription className="text-sm text-slate-600">
-            Una sola vez definís si usás Spot como explorador o como propietario. Podés cambiar el
-            detalle de tu cuenta más adelante desde el perfil si hace falta.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3 pb-5">
-          {options.map((option) => {
-            const isSelected = selectedOption === option.id
-            const Icon = option.icon
-            return (
-              <button
-                key={option.id}
-                type="button"
-                onClick={() => setSelectedOption(option.id)}
-                className={`w-full rounded-2xl border p-4 text-left transition-all focus-visible:ring-2 focus-visible:ring-slate-900/20 focus-visible:outline-none ${
-                  isSelected
-                    ? "border-sky-500 bg-gradient-to-r from-sky-50 to-white shadow-[0_10px_24px_rgba(2,132,199,0.16)]"
-                    : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-[0_6px_16px_rgba(15,23,42,0.10)]"
-                }`}
-                aria-pressed={isSelected}
-                disabled={loading}
-              >
-                <div className="flex items-start gap-3">
-                  <span
-                    className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
-                      isSelected ? "bg-sky-500 text-white" : "bg-slate-100 text-slate-700"
-                    }`}
-                  >
-                    <Icon size={20} />
-                  </span>
-                  <div className="min-w-0">
-                    <p className="text-base font-semibold text-slate-900">{option.title}</p>
-                    <p className="mt-1 text-sm text-slate-600">{option.description}</p>
-                    <p className="mt-2 text-xs font-medium text-slate-500">{option.helper}</p>
-                    {isSelected ? (
-                      <span className="mt-3 inline-flex rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-700">
-                        Seleccionado
-                      </span>
-                    ) : null}
-                  </div>
-                </div>
-              </button>
-            )
-          })}
-          {error ? (
-            <p className="text-sm font-medium text-red-600" role="alert">
-              {error}
-            </p>
-          ) : null}
-          <Button
+    // Shell mobile-first: alto mínimo viewport, fondo gris suave, tipografía y esquema claro.
+    <div className="relative flex min-h-[100dvh] flex-col bg-[#f7f7f7] text-neutral-900 [color-scheme:light]">
+      {/* Cabecera fija visualmente al flujo superior: flecha atrás + título centrado “Spot”. */}
+      <header className="relative flex shrink-0 items-center justify-center px-4 pb-2 pt-[max(0.75rem,env(safe-area-inset-top))]">
+        {/* Vuelve a la pantalla anterior del historial (p. ej. login); aria-label para accesibilidad. */}
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
+          className="absolute left-4 top-[max(0.75rem,env(safe-area-inset-top))] inline-flex h-10 w-10 items-center justify-center rounded-full text-neutral-900 transition-colors hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20"
+          aria-label="Volver"
+        >
+          <ArrowLeft className="h-5 w-5" strokeWidth={2} aria-hidden />
+        </button>
+        {/* Marca de la app centrada en la cabecera */}
+        <h1 className="text-lg font-bold tracking-tight">Spot</h1>
+      </header>
+
+      {/* Área scrollable centrada y limitada a ~400px como en el mockup móvil; animación de entrada fade-in. */}
+      <main className="spot-usage-screen-enter mx-auto w-full max-w-[400px] flex-1 px-5 pb-32 pt-6">
+        {/* Bloque de títulos: pregunta principal + subtítulo + microcopy social proof */}
+        <div className="text-center">
+          {/* Pregunta hero del flujo de onboarding */}
+          <h2 className="text-[1.65rem] font-bold leading-tight tracking-tight text-neutral-900">
+            ¿Cómo querés usar Spot?
+          </h2>
+          {/* Subtítulo que guía a elegir una de las dos tarjetas */}
+          <p className="mt-2 text-sm text-neutral-500">Elegí una opción para continuar</p>
+          {/* Texto pequeño y sutil: refuerzo de confianza / comunidad */}
+          <p className="mt-4 text-xs font-medium text-neutral-400">+2.000 bares activos cerca tuyo</p>
+        </div>
+
+        {/* Lista vertical de tarjetas con espacio uniforme entre ellas */}
+        <div className="mt-10 flex flex-col gap-4">
+          {options.map((option) => (
+            <UsageOptionCard
+              key={option.id} // Key estable para reconciliación de React en listas
+              optionId={option.id} // Identifica la opción al hacer clic
+              title={option.title} // Título en negrita dentro de la card
+              description={option.description} // Descripción gris
+              selected={selectedOption === option.id} // Calcula si esta fila es la seleccionada
+              onSelect={setSelectedOption} // Actualiza useState con el id pulsado
+              icon={option.icon} // Pasa el componente Compass o Store
+              exploreVariant={option.exploreVariant} // Alterna estilo de ícono explorar vs publicar
+              disabled={loading} // Evita cambiar opción mientras continuar está procesando
+            />
+          ))}
+        </div>
+
+        {/* Mensaje de error inline si falla asignarRol */}
+        {error ? (
+          <p className="mt-6 text-center text-sm font-medium text-red-600" role="alert">
+            {error}
+          </p>
+        ) : null}
+      </main>
+
+      {/* Barra inferior fija: botón ancho completo con safe-area para iPhone */}
+      <footer className="fixed bottom-0 left-0 right-0 z-10 border-t border-transparent bg-[#f7f7f7]/95 px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur-sm">
+        <div className="mx-auto w-full max-w-[400px]">
+          {/* Continuar: deshabilitado sin selección o durante loading; estilo pill negro con flecha */}
+          <button
             type="button"
             onClick={handleContinue}
             disabled={!selected || loading}
-            className="mt-3 h-11 w-full rounded-xl bg-slate-900 text-base font-semibold text-white shadow-[0_10px_20px_rgba(15,23,42,0.25)] hover:bg-slate-800 disabled:bg-slate-300 disabled:shadow-none"
+            className={[
+              "flex h-14 w-full items-center justify-center rounded-full text-base font-semibold text-white transition-all duration-300",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 focus-visible:ring-offset-2",
+              !selected || loading
+                ? "cursor-not-allowed bg-black opacity-40 shadow-none"
+                : "cursor-pointer bg-black opacity-100 shadow-md hover:scale-[1.02] hover:shadow-lg active:scale-[0.99]",
+            ].join(" ")}
           >
-            {loading ? "Guardando..." : "Continuar"}
-          </Button>
-        </CardContent>
-      </Card>
+            {loading ? "Guardando..." : "Continuar →"}
+          </button>
+        </div>
+      </footer>
     </div>
   )
 }
