@@ -1,12 +1,19 @@
-/* html, body, #root {
-  width: 100%;
+html, body, #root {
   height: 100%;
   margin: 0;
   padding: 0;
 }
+
+#root {
+  max-width: none;
+}
+
+.leaflet-container {
+  font-family: inherit;
+}
 body {
   overflow-x: hidden;
-} */
+}
 .logo {
   height: 6em;
   padding: 1.5em;
@@ -41,4 +48,156 @@ body {
 
 .read-the-docs {
   color: #888;
+}
+
+/* En mobile, ocultar solo botones de zoom (+/-) de MapLibre */
+@media (max-width: 768px) {
+  .maplibregl-ctrl-zoom-in,
+  .maplibregl-ctrl-zoom-out {
+    display: none !important;
+  }
+}
+
+/* Evitar que la brújula (NavigationControl) quede tapada por BottomNav */
+.maplibregl-ctrl-bottom-right {
+  bottom: 96px !important;
+  transition: bottom 200ms ease-out;
+}
+
+/* Tarjeta de bar abierta: subir controles MapLibre por encima de la card */
+.spot-map-with-bar-card .maplibregl-ctrl-bottom-right {
+  bottom: 260px !important;
+}
+
+/* Posición del usuario en el mapa (estilo apps tipo Uber) */
+@keyframes spot-user-halo {
+  0% {
+    transform: scale(0.88);
+    opacity: 0.45;
+  }
+  70% {
+    transform: scale(1.45);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.45);
+    opacity: 0;
+  }
+}
+
+.spot-user-marker {
+  pointer-events: none;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.spot-user-marker__inner {
+  position: relative;
+  width: 16px;
+  height: 16px;
+}
+
+.spot-user-marker__halo {
+  position: absolute;
+  inset: -9px;
+  border-radius: 9999px;
+  background: rgba(107, 114, 128, 0.26);
+  animation: spot-user-halo 2.4s ease-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spot-user-marker__halo {
+    animation: none;
+    opacity: 0.35;
+    transform: scale(1.1);
+  }
+}
+
+.spot-user-marker__dot {
+  position: relative;
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  background: #334155;
+  border: 2.5px solid #fff;
+  box-shadow:
+    0 3px 10px rgba(0, 0, 0, 0.35),
+    0 0 0 6px rgba(51, 65, 85, 0.14),
+    0 0 0 1px rgba(0, 0, 0, 0.12);
+}
+
+.spot-profile-sheet {
+  animation: spot-sheet-in 200ms ease-out both;
+}
+
+/* Bottom sheet: animación de subida suave */
+@keyframes spot-sheet-in {
+  from {
+    transform: translateY(18px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes spot-open-emoji-pulse {
+  0% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+  40% {
+    transform: scale(1.14);
+    filter: brightness(1.35);
+  }
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+}
+
+/* Scroll del panel de detalles (que se vea oscuro/negro) */
+.spot-details-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.55) rgba(0, 0, 0, 0.15);
+}
+
+.spot-details-scroll::-webkit-scrollbar {
+  width: 7px;
+}
+
+.spot-details-scroll::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 9999px;
+}
+
+.spot-details-scroll::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.55);
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Horizontal stories scroll (tambien con thumb oscuro) */
+.spot-stories-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.55) rgba(0, 0, 0, 0.15);
+}
+
+.spot-stories-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+
+.spot-stories-scroll::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 9999px;
+}
+
+.spot-stories-scroll::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.55);
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }

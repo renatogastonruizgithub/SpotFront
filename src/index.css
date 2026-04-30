@@ -127,3 +127,19 @@
     @apply font-sans;
   }
 }
+
+/* Entrada suave de la pantalla “¿Cómo querés usar Spot?” (fade + ligero slide vertical). */
+@keyframes spot-usage-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.spot-usage-screen-enter {
+  animation: spot-usage-fade-in 0.55s ease-out forwards;
+}

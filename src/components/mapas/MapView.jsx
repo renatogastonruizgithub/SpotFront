@@ -10,8 +10,17 @@ import L from "leaflet"
 export default function MapView({ bars, positionUser }) {
 
   const userIcon = new L.DivIcon({
-    html: "&#128102",
-    className: "text-2xl",
+    html: `
+      <div class="spot-user-marker">
+        <div class="spot-user-marker__inner">
+          <div class="spot-user-marker__halo"></div>
+          <div class="spot-user-marker__dot"></div>
+        </div>
+      </div>
+    `,
+    className: "",
+    iconSize: [22, 22],
+    iconAnchor: [11, 11],
   })
 
   useDistanceTracker((meters) => {
@@ -20,8 +29,15 @@ export default function MapView({ bars, positionUser }) {
 
 
   const barIcon = new L.DivIcon({
-    html: "🍺",
-    className: "text-2xl",
+    html: `
+      <div class="relative w-10 h-10 flex items-center justify-center">
+        <div class="absolute inset-0 rounded-full border border-[#7eefff]/50 bg-[#00D1FF]/25 animate-pulse shadow-[0_0_12px_rgba(0,209,255,0.35)]"></div>
+        <div class="relative w-10 h-10 rounded-full flex items-center justify-center shadow-md shadow-[#00D1FF]/30 animate-[pulse_2.2s_ease-in-out_infinite] bg-[#00D1FF]/88 ring-1 ring-white/20">
+          <span class="text-lg leading-none drop-shadow-sm">🍸</span>
+        </div>
+      </div>
+    `,
+    className: "",
   })
 
 
@@ -44,8 +60,8 @@ export default function MapView({ bars, positionUser }) {
       <MapMarkers position={positionUser} text="Aqui estas" icon={userIcon} />
 
       {Array.isArray(bars) && bars.map(bar => {
-        const lat = Number(bar.lat)
-        const lng = Number(bar.lng)
+        const lat = Number(bar.lat ?? bar.Lat)
+        const lng = Number(bar.lng ?? bar.Lng)
         if (isNaN(lat) || isNaN(lng)) return null
         
         return (

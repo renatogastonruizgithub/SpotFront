@@ -1,53 +1,58 @@
-import './App.css'
-import MapView from "./components/mapas/MapView"
+import "./App.css"
 import MapViewGL from "./components/mapas/MapViewGL"
-import BottomNav from './components/navegation/bottomNavegation'
-import { Serch } from './components/serch/Serch'
-import { useState } from 'react'
-import { useGetNegocios } from './hooks/getNegocios'
-import ubicacionUsuario from './hooks/obtenerUbicacionGps'
+import BottomNav from "./components/navegation/bottomNavegation"
+import { useState, useEffect, useRef } from "react"
+import { useNavigate } from "react-router-dom"
+import { useGetNegocios } from "./hooks/getNegocios"
+import ubicacionUsuario from "./hooks/obtenerUbicacionGps"
+import { logout } from "./services/authService"
+import ProfileScreen from "./components/profile/ProfileScreen"
 
+const RADIO_INICIAL_KM = (() => {
+  const n = Number(import.meta.env.VITE_MAPA_RADIO_KM)
+  return Number.isFinite(n) && n > 0 ? n : 10
+})()
 
 function App() {
+  const navigate = useNavigate()
+  const [activeTab, setActiveTab] = useState("map")
   const [bars, setBars] = useState([])
   const { buscarNegociosCercanos } = useGetNegocios()
   const positionUser = ubicacionUsuario()
 
-  const handleSearch = async (radiusKm) => {
-    if (!positionUser) {
-      alert("Esperando ubicación GPS...")
-      return
-    }
-
-    try {
-      const [lat, lng] = positionUser
-      console.log(`Buscando en radio de ${radiusKm}km desde`, lat, lng)
-      const data = await buscarNegociosCercanos(lat, lng, radiusKm)
-      setBars(data)
-    } catch (error) {
-      console.error("Error buscando negocios:", error)
-    }
-  }
+  const buscadoAlInicio = useRef(false)
+  useEffect(() => {
+    if (!positionUser || buscadoAlInicio.current) return
+    buscadoAlInicio.current = true
+    const [lat, lng] = positionUser
+    ;(async () => {
+      try {
+        console.log(`Búsqueda inicial: radio ${RADIO_INICIAL_KM} km desde`, lat, lng)
+        const data = await buscarNegociosCercanos(lat, lng, RADIO_INICIAL_KM)
+        setBars(Array.isArray(data) ? data : [])
+      } catch (error) {
+        console.error("Error buscando negocios:", error)
+      }
+    })()
+  }, [positionUser])
 
   return (
     <>
-
-      <div className="h-[100dvh] w-full overflow-hidden relative">
-       {/*  <MapView bars={bars} positionUser={positionUser} /> */}
-       
+      <div className="relative h-[100dvh] w-full overflow-hidden">
         <MapViewGL bars={bars} positionUser={positionUser} />
-        
-       <div className="absolute top-4 left-0 right-0 z-50">
-         <Serch onSearch={handleSearch} />
-        </div> 
 
-        <BottomNav
-          active="map"
-          onChange={(tab) => console.log(tab)}
-        />
+        {activeTab === "perfil" ? (
+          <ProfileScreen
+            onBack={() => setActiveTab("map")}
+            onSessionExpired={() => {
+              logout()
+              navigate("/login", { replace: true })
+            }}
+          />
+        ) : (
+          <BottomNav active={activeTab} onChange={setActiveTab} />
+        )}
       </div>
-
-
     </>
   )
 }
